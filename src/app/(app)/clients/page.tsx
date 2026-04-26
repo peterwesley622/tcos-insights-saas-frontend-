@@ -1,15 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
 import { api, type Client } from "@/lib/api";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let clients: Client[] = [];
   let fetchError: string | null = null;
   try {
@@ -22,12 +16,7 @@ export default async function ClientsPage() {
     <main className="min-h-screen bg-slate-50 p-8">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
-            <p className="text-sm text-slate-600">
-              Signed in as {user?.email ?? "unknown"}
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
           <Link
             href="/clients/new"
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
