@@ -230,7 +230,13 @@ export default function EditClientPage() {
               ID {client.id} · {client.active ? "Active" : "Inactive"}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/clients/${client.id}/reports`}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Reports →
+            </Link>
             <Link
               href={`/clients/${client.id}/targets`}
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"

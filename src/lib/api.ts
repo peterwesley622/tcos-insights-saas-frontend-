@@ -104,6 +104,26 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+async function requestText(path: string, init: RequestInit = {}): Promise<string> {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
+  }
+  return res.text();
+}
+
+export type ReportSendResult = {
+  client_id: number;
+  status: "sent" | "failed" | "dry_run" | string;
+  message?: string;
+  error?: string;
+};
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   listClients: () => request<Client[]>("/api/clients"),
@@ -162,4 +182,40 @@ export const api = {
     request<{ last_run: string | null; status: string }>(
       "/api/scheduler/status",
     ),
+
+  generateSimproReportHtml: (clientId: number) =>
+    requestText(`/api/reports/generate?format=html`, {
+      method: "POST",
+      body: JSON.stringify({ client_id: clientId }),
+    }),
+  generateScorecardHtml: (clientId: number) =>
+    requestText(`/api/clients/${clientId}/reports/scorecard?format=html`, {
+      method: "POST",
+    }),
+  sendSimproReport: (
+    clientId: number,
+    opts: { test_email?: string; dry_run?: boolean } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (opts.test_email) qs.set("test_email", opts.test_email);
+    if (opts.dry_run) qs.set("dry_run", "true");
+    const tail = qs.toString() ? `?${qs.toString()}` : "";
+    return request<ReportSendResult>(
+      `/api/clients/${clientId}/reports/send${tail}`,
+      { method: "POST" },
+    );
+  },
+  sendScorecardReport: (
+    clientId: number,
+    opts: { test_email?: string; dry_run?: boolean } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (opts.test_email) qs.set("test_email", opts.test_email);
+    if (opts.dry_run) qs.set("dry_run", "true");
+    const tail = qs.toString() ? `?${qs.toString()}` : "";
+    return request<ReportSendResult>(
+      `/api/clients/${clientId}/reports/scorecard/send${tail}`,
+      { method: "POST" },
+    );
+  },
 };
