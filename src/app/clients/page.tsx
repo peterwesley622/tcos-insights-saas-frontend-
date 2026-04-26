@@ -69,10 +69,10 @@ export default async function ClientsPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-600">{c.owner_name ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-600">
-                    {c.simpro_url ? "✅" : "—"}
+                    {c.simpro_base_url ? "✅" : "—"}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {c.xero_tenant_id ? "✅" : "—"}
+                    {c.xero_connected ? "✅" : "—"}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {c.active ? "✅" : "❌"}
