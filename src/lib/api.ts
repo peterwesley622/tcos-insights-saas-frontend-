@@ -58,16 +58,31 @@ export type Target = {
   id: number;
   client_id: number;
   period_start: string;
-  period_end: string;
-  revenue: number | null;
-  materials: number | null;
-  subcontractors: number | null;
-  wages: number | null;
-  gross_profit: number | null;
-  overheads: number | null;
-  net_profit: number | null;
-  rev_per_worker: number | null;
+  period_end: string | null;
+  revenue: number;
+  materials: number;
+  subcontractors: number;
+  wages: number;
+  gross_profit: number;
+  overheads: number;
+  net_profit: number;
+  rev_per_worker: number;
 };
+
+export type TargetCreate = {
+  period_start: string;
+  period_end?: string | null;
+  revenue?: number;
+  materials?: number;
+  subcontractors?: number;
+  wages?: number;
+  gross_profit?: number;
+  overheads?: number;
+  net_profit?: number;
+  rev_per_worker?: number;
+};
+
+export type TargetUpdate = Partial<TargetCreate>;
 
 async function request<T>(
   path: string,
@@ -129,6 +144,20 @@ export const api = {
     }),
   listTargets: (clientId: number) =>
     request<Target[]>(`/api/clients/${clientId}/targets`),
+  createTarget: (clientId: number, body: TargetCreate) =>
+    request<Target>(`/api/clients/${clientId}/targets`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateTarget: (clientId: number, targetId: number, body: TargetUpdate) =>
+    request<Target>(`/api/clients/${clientId}/targets/${targetId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteTarget: (clientId: number, targetId: number) =>
+    request<void>(`/api/clients/${clientId}/targets/${targetId}`, {
+      method: "DELETE",
+    }),
   schedulerStatus: () =>
     request<{ last_run: string | null; status: string }>(
       "/api/scheduler/status",

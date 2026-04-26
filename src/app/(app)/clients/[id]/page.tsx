@@ -230,9 +230,17 @@ export default function EditClientPage() {
               ID {client.id} · {client.active ? "Active" : "Inactive"}
             </p>
           </div>
-          <Link href="/clients" className="text-sm text-slate-600 hover:text-slate-900">
-            ← Back to clients
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/clients/${client.id}/targets`}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Targets →
+            </Link>
+            <Link href="/clients" className="text-sm text-slate-600 hover:text-slate-900">
+              ← Back to clients
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={onSave} className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
