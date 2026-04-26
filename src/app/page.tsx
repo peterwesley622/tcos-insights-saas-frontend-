@@ -2,17 +2,49 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-8">
-      <div className="max-w-2xl text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight text-slate-900">
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem",
+        backgroundColor: "#f8fafc",
+      }}
+    >
+      <div style={{ maxWidth: "42rem", textAlign: "center" }}>
+        <h1
+          style={{
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            color: "#0f172a",
+            marginBottom: "1rem",
+          }}
+        >
           TCOS Insights
         </h1>
-        <p className="mb-8 text-lg text-slate-600">
+        <p
+          style={{
+            fontSize: "1.125rem",
+            color: "#475569",
+            marginBottom: "2rem",
+          }}
+        >
           Automated weekly performance reports for trade contractors.
         </p>
         <Link
           href="/login"
-          className="inline-block rounded-md bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+          style={{
+            display: "inline-block",
+            backgroundColor: "#0f172a",
+            color: "#ffffff",
+            padding: "0.75rem 1.5rem",
+            borderRadius: "0.375rem",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            textDecoration: "none",
+          }}
         >
           Sign in
         </Link>
