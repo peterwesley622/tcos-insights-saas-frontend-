@@ -117,6 +117,15 @@ async function requestText(path: string, init: RequestInit = {}): Promise<string
   return res.text();
 }
 
+export type ReportLog = {
+  id: number;
+  client_id: number;
+  report_type: string;
+  status: string;
+  sent_at: string | null;
+  error_message: string | null;
+};
+
 export type ReportSendResult = {
   client_id: number;
   status: "sent" | "failed" | "dry_run" | string;
@@ -182,6 +191,8 @@ export const api = {
     request<{ last_run: string | null; status: string }>(
       "/api/scheduler/status",
     ),
+  listReportLogs: (clientId: number, limit: number = 50) =>
+    request<ReportLog[]>(`/api/clients/${clientId}/report-logs?limit=${limit}`),
 
   generateSimproReportHtml: (clientId: number) =>
     requestText(`/api/reports/generate?format=html`, {
