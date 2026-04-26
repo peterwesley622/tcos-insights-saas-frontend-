@@ -13,7 +13,9 @@ export default function EditClientPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionMsg, setActionMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [saveMsg, setSaveMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [connMsg, setConnMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -71,18 +73,18 @@ export default function EditClientPage() {
     if (!client) return;
     const patch = diffPatch();
     if (Object.keys(patch).length === 0) {
-      setActionMsg({ kind: "ok", text: "No changes to save." });
+      setSaveMsg({ kind: "ok", text: "No changes to save." });
       return;
     }
     setSaving(true);
-    setActionMsg(null);
+    setSaveMsg(null);
     try {
       const updated = await api.updateClient(client.id, patch);
       setClient(updated);
       setNewSimproKey("");
-      setActionMsg({ kind: "ok", text: "Saved." });
+      setSaveMsg({ kind: "ok", text: "Saved." });
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setSaveMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setSaving(false);
     }
@@ -91,21 +93,21 @@ export default function EditClientPage() {
   async function onTestSimpro() {
     if (!client) return;
     setActioning(true);
-    setActionMsg(null);
+    setConnMsg(null);
     try {
       const r = await api.testSimpro(client.id);
       const companiesOk = r.companies_endpoint.ok;
       const jobsOk = r.jobs_endpoint.status === "connected";
       if (companiesOk && jobsOk) {
-        setActionMsg({ kind: "ok", text: "Simpro: companies + jobs both OK." });
+        setConnMsg({ kind: "ok", text: "Simpro: companies + jobs both OK." });
       } else {
         const errs: string[] = [];
         if (!companiesOk) errs.push(`companies: ${r.companies_endpoint.error ?? "failed"}`);
         if (!jobsOk) errs.push(`jobs: ${r.jobs_endpoint.message ?? r.jobs_endpoint.status}`);
-        setActionMsg({ kind: "err", text: `Simpro test failed — ${errs.join("; ")}` });
+        setConnMsg({ kind: "err", text: `Simpro test failed — ${errs.join("; ")}` });
       }
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
     }
@@ -114,16 +116,16 @@ export default function EditClientPage() {
   async function onTestXero() {
     if (!client) return;
     setActioning(true);
-    setActionMsg(null);
+    setConnMsg(null);
     try {
       const r = await api.testXero(client.id);
       if (r.status === "connected") {
-        setActionMsg({ kind: "ok", text: `Xero OK — ${r.organisation}` });
+        setConnMsg({ kind: "ok", text: `Xero OK — ${r.organisation}` });
       } else {
-        setActionMsg({ kind: "err", text: `Xero: ${r.message}` });
+        setConnMsg({ kind: "err", text: `Xero: ${r.message}` });
       }
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
     }
@@ -132,17 +134,17 @@ export default function EditClientPage() {
   async function onConnectXero() {
     if (!client) return;
     setActioning(true);
-    setActionMsg(null);
+    setConnMsg(null);
     try {
       const res = await fetch(api.xeroConnectUrl(client.id), { cache: "no-store" });
       const json = await res.json();
       if (json.authorize_url) {
         window.location.href = json.authorize_url;
       } else {
-        setActionMsg({ kind: "err", text: "Could not get Xero authorize URL." });
+        setConnMsg({ kind: "err", text: "Could not get Xero authorize URL." });
       }
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
     }
@@ -152,14 +154,14 @@ export default function EditClientPage() {
     if (!client) return;
     if (!confirm("Disconnect Xero for this client?")) return;
     setActioning(true);
-    setActionMsg(null);
+    setConnMsg(null);
     try {
       await api.disconnectXero(client.id);
       const fresh = await api.getClient(client.id);
       setClient(fresh);
-      setActionMsg({ kind: "ok", text: "Disconnected from Xero." });
+      setConnMsg({ kind: "ok", text: "Disconnected from Xero." });
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
     }
@@ -170,13 +172,13 @@ export default function EditClientPage() {
     const next = !client.active;
     if (!next && !confirm("Deactivate this client? They will be skipped by the Monday cron.")) return;
     setActioning(true);
-    setActionMsg(null);
+    setStatusMsg(null);
     try {
       const updated = await api.updateClient(client.id, { active: next });
       setClient(updated);
-      setActionMsg({ kind: "ok", text: next ? "Activated." : "Deactivated." });
+      setStatusMsg({ kind: "ok", text: next ? "Activated." : "Deactivated." });
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setStatusMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
     }
@@ -190,7 +192,7 @@ export default function EditClientPage() {
       await api.deleteClient(client.id);
       router.push("/clients");
     } catch (e) {
-      setActionMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setStatusMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
       setActioning(false);
     }
   }
@@ -232,16 +234,6 @@ export default function EditClientPage() {
             ← Back to clients
           </Link>
         </div>
-
-        {actionMsg && (
-          <div
-            className={`mb-4 rounded-md p-3 text-sm ${
-              actionMsg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
-            }`}
-          >
-            {actionMsg.text}
-          </div>
-        )}
 
         <form onSubmit={onSave} className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <Section title="Business">
@@ -337,6 +329,15 @@ export default function EditClientPage() {
           </Section>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+            {saveMsg && (
+              <span
+                className={`mr-auto text-sm ${
+                  saveMsg.kind === "ok" ? "text-green-700" : "text-red-700"
+                }`}
+              >
+                {saveMsg.text}
+              </span>
+            )}
             <button
               type="submit"
               disabled={saving}
@@ -390,6 +391,15 @@ export default function EditClientPage() {
               </button>
             )}
           </div>
+          {connMsg && (
+            <div
+              className={`mt-4 rounded-md p-3 text-sm ${
+                connMsg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+              }`}
+            >
+              {connMsg.text}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -414,6 +424,15 @@ export default function EditClientPage() {
               Soft-delete
             </button>
           </div>
+          {statusMsg && (
+            <div
+              className={`mt-4 rounded-md p-3 text-sm ${
+                statusMsg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+              }`}
+            >
+              {statusMsg.text}
+            </div>
+          )}
         </div>
       </div>
     </main>
