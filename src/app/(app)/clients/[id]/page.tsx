@@ -26,6 +26,7 @@ export default function EditClientPage() {
   const [gpLow, setGpLow] = useState<number | "">("");
   const [gpHigh, setGpHigh] = useState<number | "">("");
   const [siteWorkers, setSiteWorkers] = useState<number | "">("");
+  const [wagesInOpex, setWagesInOpex] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [actioning, setActioning] = useState(false);
@@ -44,6 +45,7 @@ export default function EditClientPage() {
         setGpLow(c.gp_threshold_low ?? "");
         setGpHigh(c.gp_threshold_high ?? "");
         setSiteWorkers(c.num_site_workers ?? "");
+        setWagesInOpex(Boolean(c.wages_in_opex));
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
@@ -65,6 +67,7 @@ export default function EditClientPage() {
     if (hi !== client.gp_threshold_high) patch.gp_threshold_high = hi;
     const sw = siteWorkers === "" ? null : Number(siteWorkers);
     if (sw !== client.num_site_workers) patch.num_site_workers = sw;
+    if (wagesInOpex !== Boolean(client.wages_in_opex)) patch.wages_in_opex = wagesInOpex;
     return patch;
   }
 
@@ -346,6 +349,24 @@ export default function EditClientPage() {
                 className={inputCls}
               />
             </Field>
+            <label className="flex items-start gap-2 pt-2">
+              <input
+                type="checkbox"
+                checked={wagesInOpex}
+                onChange={(e) => setWagesInOpex(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-slate-700">
+                  Wages live in Operating Expenses (not Cost of Sales)
+                </span>
+                <span className="block text-xs text-slate-500">
+                  Tick this for clients (e.g. LS Fencing) whose Xero chart of accounts puts
+                  wages, super and worker&apos;s comp in OpEx. The scorecard then moves those
+                  amounts out of Overheads and into Wages so both totals are correct.
+                </span>
+              </span>
+            </label>
           </Section>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">

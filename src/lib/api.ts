@@ -17,6 +17,7 @@ export type Client = {
   num_site_workers: number | null;
   gp_threshold_low: number | null;
   gp_threshold_high: number | null;
+  wages_in_opex: boolean;
   active: boolean | null;
   xero_connected: boolean;
   xero_tenant_id: string | null;
@@ -32,6 +33,7 @@ export type ClientCreate = {
   num_site_workers?: number | null;
   gp_threshold_low?: number | null;
   gp_threshold_high?: number | null;
+  wages_in_opex?: boolean;
 };
 
 export type ClientUpdate = Partial<{
@@ -44,6 +46,7 @@ export type ClientUpdate = Partial<{
   num_site_workers: number | null;
   gp_threshold_low: number | null;
   gp_threshold_high: number | null;
+  wages_in_opex: boolean;
   active: boolean | null;
 }>;
 

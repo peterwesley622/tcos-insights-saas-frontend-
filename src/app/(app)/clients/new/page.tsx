@@ -17,6 +17,7 @@ export default function NewClientPage() {
   const [gpLow, setGpLow] = useState(25);
   const [gpHigh, setGpHigh] = useState(45);
   const [siteWorkers, setSiteWorkers] = useState(1);
+  const [wagesInOpex, setWagesInOpex] = useState(false);
 
   const [detectResult, setDetectResult] = useState<SimproDetectResult | null>(null);
   const [detecting, setDetecting] = useState(false);
@@ -61,6 +62,7 @@ export default function NewClientPage() {
         gp_threshold_low: gpLow,
         gp_threshold_high: gpHigh,
         num_site_workers: siteWorkers,
+        wages_in_opex: wagesInOpex,
       });
       router.push(`/clients/${created.id}`);
     } catch (e) {
@@ -217,6 +219,24 @@ export default function NewClientPage() {
                 className={inputCls}
               />
             </Field>
+            <label className="flex items-start gap-2 pt-2">
+              <input
+                type="checkbox"
+                checked={wagesInOpex}
+                onChange={(e) => setWagesInOpex(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-slate-700">
+                  Wages live in Operating Expenses (not Cost of Sales)
+                </span>
+                <span className="block text-xs text-slate-500">
+                  Tick this for clients whose Xero chart of accounts puts wages, super and
+                  worker&apos;s comp under OpEx instead of Cost of Sales. Leave unticked unless
+                  you know otherwise.
+                </span>
+              </span>
+            </label>
           </Section>
 
           {error && (
