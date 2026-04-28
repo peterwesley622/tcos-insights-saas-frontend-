@@ -3,7 +3,8 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api, type Client, type ReportLog } from "@/lib/api";
+import { type Client, type ReportLog } from "@/lib/api";
+import { useApi } from "@/lib/api-browser";
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
   simpro_weekly: "Simpro labour",
@@ -33,6 +34,7 @@ function fmtDate(iso: string | null) {
 
 export default function HistoryPage() {
   const params = useParams<{ id: string }>();
+  const api = useApi();
   const clientId = Number(params.id);
 
   const [client, setClient] = useState<Client | null>(null);
@@ -54,7 +56,7 @@ export default function HistoryPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [clientId]);
+  }, [api, clientId]);
 
   useEffect(() => {
     if (!clientId) return;

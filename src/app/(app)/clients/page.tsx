@@ -1,4 +1,5 @@
-import { api, type Client } from "@/lib/api";
+import { type Client } from "@/lib/api";
+import { makeServerApi } from "@/lib/api-server";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ export default async function ClientsPage() {
   let clients: Client[] = [];
   let fetchError: string | null = null;
   try {
+    const api = await makeServerApi();
     clients = await api.listClients();
   } catch (e) {
     fetchError = e instanceof Error ? e.message : String(e);

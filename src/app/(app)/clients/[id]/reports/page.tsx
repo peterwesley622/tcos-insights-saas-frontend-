@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api, type Client, type ReportSendResult } from "@/lib/api";
+import { type Client, type ReportSendResult } from "@/lib/api";
+import { useApi } from "@/lib/api-browser";
 
 type ReportKind = "simpro" | "scorecard";
 
@@ -27,6 +28,7 @@ type Status = "idle" | "generating" | "ok" | "err";
 
 export default function ReportsPage() {
   const params = useParams<{ id: string }>();
+  const api = useApi();
   const clientId = Number(params.id);
 
   const [client, setClient] = useState<Client | null>(null);

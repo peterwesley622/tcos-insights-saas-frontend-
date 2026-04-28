@@ -87,39 +87,6 @@ export type TargetCreate = {
 
 export type TargetUpdate = Partial<TargetCreate>;
 
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
-  const res = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
-  }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
-}
-
-async function requestText(path: string, init: RequestInit = {}): Promise<string> {
-  const res = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
-  }
-  return res.text();
-}
-
 export type ReportLog = {
   id: number;
   client_id: number;
@@ -136,98 +103,153 @@ export type ReportSendResult = {
   error?: string;
 };
 
-export const api = {
-  health: () => request<{ status: string }>("/health"),
-  listClients: () => request<Client[]>("/api/clients"),
-  detectSimproCompanies: (body: { simpro_base_url: string; simpro_api_key: string }) =>
-    request<SimproDetectResult>("/api/simpro/detect-companies", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  getClient: (id: number) => request<Client>(`/api/clients/${id}`),
-  createClient: (body: ClientCreate) =>
-    request<Client>("/api/clients", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  updateClient: (id: number, body: ClientUpdate) =>
-    request<Client>(`/api/clients/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-  deleteClient: (id: number) =>
-    request<void>(`/api/clients/${id}`, { method: "DELETE" }),
-  testSimpro: (id: number) =>
-    request<{
-      client_id: number;
-      companies_endpoint: { ok: boolean; error: string | null };
-      jobs_endpoint: { status: string; message?: string };
-    }>(`/api/clients/${id}/test-simpro`, { method: "POST" }),
-  testXero: (id: number) =>
-    request<
-      | { status: "connected"; organisation: string; tenant_id: string }
-      | { status: "error"; message: string }
-    >(`/api/clients/${id}/test-xero`, { method: "POST" }),
-  xeroConnectUrl: (id: number) =>
-    `${getApiBaseUrl()}/api/clients/${id}/xero/connect`,
-  disconnectXero: (id: number) =>
-    request<{ ok: boolean }>(`/api/clients/${id}/xero/disconnect`, {
-      method: "POST",
-    }),
-  listTargets: (clientId: number) =>
-    request<Target[]>(`/api/clients/${clientId}/targets`),
-  createTarget: (clientId: number, body: TargetCreate) =>
-    request<Target>(`/api/clients/${clientId}/targets`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  updateTarget: (clientId: number, targetId: number, body: TargetUpdate) =>
-    request<Target>(`/api/clients/${clientId}/targets/${targetId}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-  deleteTarget: (clientId: number, targetId: number) =>
-    request<void>(`/api/clients/${clientId}/targets/${targetId}`, {
-      method: "DELETE",
-    }),
-  schedulerStatus: (limit: number = 50) =>
-    request<ReportLog[]>(`/api/scheduler/status?limit=${limit}`),
-  listReportLogs: (clientId: number, limit: number = 50) =>
-    request<ReportLog[]>(`/api/clients/${clientId}/report-logs?limit=${limit}`),
+export type GetAccessToken = () => Promise<string | null>;
 
-  generateSimproReportHtml: (clientId: number) =>
-    requestText(`/api/reports/generate?format=html`, {
-      method: "POST",
-      body: JSON.stringify({ client_id: clientId }),
-    }),
-  generateScorecardHtml: (clientId: number) =>
-    requestText(`/api/clients/${clientId}/reports/scorecard?format=html`, {
-      method: "POST",
-    }),
-  sendSimproReport: (
-    clientId: number,
-    opts: { test_email?: string; dry_run?: boolean } = {},
-  ) => {
-    const qs = new URLSearchParams();
-    if (opts.test_email) qs.set("test_email", opts.test_email);
-    if (opts.dry_run) qs.set("dry_run", "true");
-    const tail = qs.toString() ? `?${qs.toString()}` : "";
-    return request<ReportSendResult>(
-      `/api/clients/${clientId}/reports/send${tail}`,
-      { method: "POST" },
-    );
-  },
-  sendScorecardReport: (
-    clientId: number,
-    opts: { test_email?: string; dry_run?: boolean } = {},
-  ) => {
-    const qs = new URLSearchParams();
-    if (opts.test_email) qs.set("test_email", opts.test_email);
-    if (opts.dry_run) qs.set("dry_run", "true");
-    const tail = qs.toString() ? `?${qs.toString()}` : "";
-    return request<ReportSendResult>(
-      `/api/clients/${clientId}/reports/scorecard/send${tail}`,
-      { method: "POST" },
-    );
-  },
-};
+export type Api = ReturnType<typeof buildApi>;
+
+/**
+ * Construct an API client bound to a token-fetcher. Each request awaits
+ * `getAccessToken()` and attaches `Authorization: Bearer <token>` if it
+ * resolves to a non-null string. The fetcher is invoked per request so a
+ * silently-refreshed Supabase session is picked up on the next call.
+ */
+export function buildApi(getAccessToken: GetAccessToken) {
+  async function buildHeaders(extra?: HeadersInit): Promise<HeadersInit> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(extra as Record<string, string> | undefined),
+    };
+    const token = await getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+  }
+
+  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const res = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...init,
+      headers: await buildHeaders(init.headers),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
+    }
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  }
+
+  async function requestText(path: string, init: RequestInit = {}): Promise<string> {
+    const res = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...init,
+      headers: await buildHeaders(init.headers),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
+    }
+    return res.text();
+  }
+
+  return {
+    health: () => request<{ status: string }>("/health"),
+    listClients: () => request<Client[]>("/api/clients"),
+    detectSimproCompanies: (body: { simpro_base_url: string; simpro_api_key: string }) =>
+      request<SimproDetectResult>("/api/simpro/detect-companies", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    getClient: (id: number) => request<Client>(`/api/clients/${id}`),
+    createClient: (body: ClientCreate) =>
+      request<Client>("/api/clients", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    updateClient: (id: number, body: ClientUpdate) =>
+      request<Client>(`/api/clients/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    deleteClient: (id: number) =>
+      request<void>(`/api/clients/${id}`, { method: "DELETE" }),
+    testSimpro: (id: number) =>
+      request<{
+        client_id: number;
+        companies_endpoint: { ok: boolean; error: string | null };
+        jobs_endpoint: { status: string; message?: string };
+      }>(`/api/clients/${id}/test-simpro`, { method: "POST" }),
+    testXero: (id: number) =>
+      request<
+        | { status: "connected"; organisation: string; tenant_id: string }
+        | { status: "error"; message: string }
+      >(`/api/clients/${id}/test-xero`, { method: "POST" }),
+    xeroConnectUrl: (id: number) =>
+      `${getApiBaseUrl()}/api/clients/${id}/xero/connect`,
+    /**
+     * Fetch the Xero authorize URL using the user's bearer token. Returns the
+     * URL so the caller can `window.location.href = ...` it.
+     */
+    xeroConnectAuthorizeUrl: (id: number) =>
+      request<{ authorize_url: string }>(`/api/clients/${id}/xero/connect`),
+    disconnectXero: (id: number) =>
+      request<{ ok: boolean }>(`/api/clients/${id}/xero/disconnect`, {
+        method: "POST",
+      }),
+    listTargets: (clientId: number) =>
+      request<Target[]>(`/api/clients/${clientId}/targets`),
+    createTarget: (clientId: number, body: TargetCreate) =>
+      request<Target>(`/api/clients/${clientId}/targets`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    updateTarget: (clientId: number, targetId: number, body: TargetUpdate) =>
+      request<Target>(`/api/clients/${clientId}/targets/${targetId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    deleteTarget: (clientId: number, targetId: number) =>
+      request<void>(`/api/clients/${clientId}/targets/${targetId}`, {
+        method: "DELETE",
+      }),
+    schedulerStatus: (limit: number = 50) =>
+      request<ReportLog[]>(`/api/scheduler/status?limit=${limit}`),
+    listReportLogs: (clientId: number, limit: number = 50) =>
+      request<ReportLog[]>(`/api/clients/${clientId}/report-logs?limit=${limit}`),
+
+    generateSimproReportHtml: (clientId: number) =>
+      requestText(`/api/reports/generate?format=html`, {
+        method: "POST",
+        body: JSON.stringify({ client_id: clientId }),
+      }),
+    generateScorecardHtml: (clientId: number) =>
+      requestText(`/api/clients/${clientId}/reports/scorecard?format=html`, {
+        method: "POST",
+      }),
+    sendSimproReport: (
+      clientId: number,
+      opts: { test_email?: string; dry_run?: boolean } = {},
+    ) => {
+      const qs = new URLSearchParams();
+      if (opts.test_email) qs.set("test_email", opts.test_email);
+      if (opts.dry_run) qs.set("dry_run", "true");
+      const tail = qs.toString() ? `?${qs.toString()}` : "";
+      return request<ReportSendResult>(
+        `/api/clients/${clientId}/reports/send${tail}`,
+        { method: "POST" },
+      );
+    },
+    sendScorecardReport: (
+      clientId: number,
+      opts: { test_email?: string; dry_run?: boolean } = {},
+    ) => {
+      const qs = new URLSearchParams();
+      if (opts.test_email) qs.set("test_email", opts.test_email);
+      if (opts.dry_run) qs.set("dry_run", "true");
+      const tail = qs.toString() ? `?${qs.toString()}` : "";
+      return request<ReportSendResult>(
+        `/api/clients/${clientId}/reports/scorecard/send${tail}`,
+        { method: "POST" },
+      );
+    },
+  };
+}

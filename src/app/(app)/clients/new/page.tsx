@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type SimproDetectResult } from "@/lib/api";
+import { type SimproDetectResult } from "@/lib/api";
+import { useApi } from "@/lib/api-browser";
 
 export default function NewClientPage() {
   const router = useRouter();
+  const api = useApi();
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type Client, type ClientUpdate } from "@/lib/api";
+import { type Client, type ClientUpdate } from "@/lib/api";
+import { useApi } from "@/lib/api-browser";
 
 export default function EditClientPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const api = useApi();
   const clientId = Number(params.id);
 
   const [client, setClient] = useState<Client | null>(null);
@@ -139,10 +141,9 @@ export default function EditClientPage() {
     setActioning(true);
     setConnMsg(null);
     try {
-      const res = await fetch(api.xeroConnectUrl(client.id), { cache: "no-store" });
-      const json = await res.json();
-      if (json.authorize_url) {
-        window.location.href = json.authorize_url;
+      const { authorize_url } = await api.xeroConnectAuthorizeUrl(client.id);
+      if (authorize_url) {
+        window.location.href = authorize_url;
       } else {
         setConnMsg({ kind: "err", text: "Could not get Xero authorize URL." });
       }

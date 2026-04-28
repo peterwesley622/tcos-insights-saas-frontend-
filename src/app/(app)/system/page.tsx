@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { api, type Client, type ReportLog } from "@/lib/api";
+import { type Client, type ReportLog } from "@/lib/api";
+import { makeServerApi } from "@/lib/api-server";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ function fmtRelative(iso: string | null) {
 }
 
 export default async function SystemStatusPage() {
+  const api = await makeServerApi();
   const [clientsResult, logsResult] = await Promise.allSettled([
     api.listClients(),
     api.schedulerStatus(50),
