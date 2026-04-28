@@ -187,10 +187,8 @@ export const api = {
     request<void>(`/api/clients/${clientId}/targets/${targetId}`, {
       method: "DELETE",
     }),
-  schedulerStatus: () =>
-    request<{ last_run: string | null; status: string }>(
-      "/api/scheduler/status",
-    ),
+  schedulerStatus: (limit: number = 50) =>
+    request<ReportLog[]>(`/api/scheduler/status?limit=${limit}`),
   listReportLogs: (clientId: number, limit: number = 50) =>
     request<ReportLog[]>(`/api/clients/${clientId}/report-logs?limit=${limit}`),
 

@@ -16,6 +16,7 @@ export function Header({ email }: { email: string | null }) {
   }
 
   const isClients = pathname.startsWith("/clients");
+  const isSystem = pathname.startsWith("/system");
 
   return (
     <header className="border-b border-slate-200 bg-white">
@@ -34,6 +35,16 @@ export function Header({ email }: { email: string | null }) {
               }
             >
               Clients
+            </Link>
+            <Link
+              href="/system"
+              className={
+                isSystem
+                  ? "font-semibold text-slate-900"
+                  : "text-slate-600 hover:text-slate-900"
+              }
+            >
+              System
             </Link>
           </nav>
         </div>
