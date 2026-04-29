@@ -6,7 +6,7 @@ import Link from "next/link";
 import { type Client, type ReportSendResult } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
 
-type ReportKind = "simpro" | "scorecard";
+type ReportKind = "simpro" | "scorecard" | "quotes_jobs";
 
 const REPORT_META: Record<
   ReportKind,
@@ -21,6 +21,12 @@ const REPORT_META: Record<
     title: "Xero Financial Scorecard",
     subtitle: "MTD revenue, materials, wages, GP, overheads and net profit vs targets.",
     etaText: "Usually under 30 seconds.",
+  },
+  quotes_jobs: {
+    title: "Quote Follow-Up & Job Health",
+    subtitle:
+      "Priority-scored open quotes (last 90 days) and active jobs flagged for labour/materials overruns, low GP, under-invoicing, or stale progress.",
+    etaText: "1–3 minutes depending on quote count.",
   },
 };
 
@@ -38,6 +44,7 @@ export default function ReportsPage() {
   const [genState, setGenState] = useState<Record<ReportKind, { status: Status; message?: string }>>({
     simpro: { status: "idle" },
     scorecard: { status: "idle" },
+    quotes_jobs: { status: "idle" },
   });
 
   const [sendModal, setSendModal] = useState<ReportKind | null>(null);
@@ -58,10 +65,14 @@ export default function ReportsPage() {
   async function onPreview(kind: ReportKind) {
     setGenState((s) => ({ ...s, [kind]: { status: "generating" } }));
     try {
-      const html =
-        kind === "simpro"
-          ? await api.generateSimproReportHtml(clientId)
-          : await api.generateScorecardHtml(clientId);
+      let html: string;
+      if (kind === "simpro") {
+        html = await api.generateSimproReportHtml(clientId);
+      } else if (kind === "scorecard") {
+        html = await api.generateScorecardHtml(clientId);
+      } else {
+        html = await api.generateQuotesJobsHtml(clientId);
+      }
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank", "noopener");
@@ -95,10 +106,14 @@ export default function ReportsPage() {
         test_email: testEmail.trim() || undefined,
         dry_run: dryRun,
       };
-      const result =
-        sendModal === "simpro"
-          ? await api.sendSimproReport(clientId, opts)
-          : await api.sendScorecardReport(clientId, opts);
+      let result: ReportSendResult;
+      if (sendModal === "simpro") {
+        result = await api.sendSimproReport(clientId, opts);
+      } else if (sendModal === "scorecard") {
+        result = await api.sendScorecardReport(clientId, opts);
+      } else {
+        result = await api.sendQuotesJobsReport(clientId, opts);
+      }
       setSendResult(result);
     } catch (e) {
       setSendResult({
@@ -150,16 +165,16 @@ export default function ReportsPage() {
         </div>
 
         <div className="space-y-4">
-          {(["simpro", "scorecard"] as ReportKind[]).map((kind) => {
+          {(["simpro", "scorecard", "quotes_jobs"] as ReportKind[]).map((kind) => {
             const meta = REPORT_META[kind];
             const state = genState[kind];
             const generating = state.status === "generating";
-            const disabledScorecard = kind === "scorecard" && !client.xero_connected;
+            const disabled = kind === "scorecard" && !client.xero_connected;
             return (
               <section key={kind} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-1 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">{meta.title}</h2>
-                  {disabledScorecard && (
+                  {disabled && (
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                       Xero not connected
                     </span>
@@ -171,14 +186,14 @@ export default function ReportsPage() {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => onPreview(kind)}
-                    disabled={generating || disabledScorecard}
+                    disabled={generating || disabled}
                     className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     {generating ? "Generating…" : "Preview"}
                   </button>
                   <button
                     onClick={() => openSendModal(kind)}
-                    disabled={generating || disabledScorecard}
+                    disabled={generating || disabled}
                     className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
                   >
                     Send via email…
@@ -189,7 +204,9 @@ export default function ReportsPage() {
                   <p className="mt-3 text-sm text-slate-600">
                     {kind === "simpro"
                       ? "Pulling jobs from Simpro and rendering charts. This usually takes 2–3 minutes — please don't close this tab."
-                      : "Pulling MTD P&L from Xero and rendering."}
+                      : kind === "scorecard"
+                      ? "Pulling MTD P&L from Xero and rendering."
+                      : "Pulling quotes and active jobs from Simpro. 1–3 minutes."}
                   </p>
                 )}
 
