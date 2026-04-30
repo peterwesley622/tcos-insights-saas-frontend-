@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { type Principal } from "@/lib/api";
 import { makeServerApi } from "@/lib/api-server";
@@ -13,10 +14,12 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Pull the role + client_id from the backend so the Header (and, in
-  // a later PR, the route guard) can decide what to render. Best-effort:
-  // if the backend hiccups for any reason we still render the page —
-  // the role is metadata, not a security gate.
+  // Pull role from the backend so the Header can render it AND so we can
+  // bounce client-role users away from the admin UI to their own portal.
+  // Best-effort: if /api/me hiccups we still render the page — the role is
+  // metadata, not a security gate. Per-endpoint authorization on the
+  // backend is what actually keeps a client from reading other clients'
+  // data; this redirect is a UX nicety.
   let principal: Principal | null = null;
   if (user) {
     try {
@@ -25,6 +28,10 @@ export default async function AppLayout({
     } catch {
       principal = null;
     }
+  }
+
+  if (principal?.role === "client") {
+    redirect("/portal");
   }
 
   return (
