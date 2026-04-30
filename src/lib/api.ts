@@ -103,6 +103,13 @@ export type ReportSendResult = {
   error?: string;
 };
 
+export type Principal = {
+  sub: string | null;
+  email: string | null;
+  role: "admin" | "client" | "service" | string;
+  client_id: number | null;
+};
+
 export type GetAccessToken = () => Promise<string | null>;
 
 export type Api = ReturnType<typeof buildApi>;
@@ -153,6 +160,7 @@ export function buildApi(getAccessToken: GetAccessToken) {
 
   return {
     health: () => request<{ status: string }>("/health"),
+    me: () => request<Principal>("/api/me"),
     listClients: () => request<Client[]>("/api/clients"),
     detectSimproCompanies: (body: { simpro_base_url: string; simpro_api_key: string }) =>
       request<SimproDetectResult>("/api/simpro/detect-companies", {

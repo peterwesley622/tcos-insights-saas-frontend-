@@ -2,9 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { type Principal } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 
-export function Header({ email }: { email: string | null }) {
+export function Header({
+  email,
+  principal,
+}: {
+  email: string | null;
+  principal: Principal | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -48,7 +55,8 @@ export function Header({ email }: { email: string | null }) {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {principal?.role && <RoleBadge role={principal.role} />}
           {email && <span className="text-slate-500">{email}</span>}
           <button
             onClick={onSignOut}
@@ -59,5 +67,28 @@ export function Header({ email }: { email: string | null }) {
         </div>
       </div>
     </header>
+  );
+}
+
+function RoleBadge({ role }: { role: string }) {
+  // Lowercase tag with role-specific colour. Anything we don't recognise
+  // gets a grey neutral so a typo or new role from the backend doesn't
+  // crash the header.
+  const palette: Record<string, { bg: string; text: string; label: string }> = {
+    admin: { bg: "bg-slate-900", text: "text-white", label: "Admin" },
+    client: { bg: "bg-blue-100", text: "text-blue-900", label: "Client" },
+    service: { bg: "bg-amber-100", text: "text-amber-900", label: "Service" },
+  };
+  const palette_entry = palette[role.toLowerCase()] ?? {
+    bg: "bg-slate-200",
+    text: "text-slate-700",
+    label: role,
+  };
+  return (
+    <span
+      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${palette_entry.bg} ${palette_entry.text}`}
+    >
+      {palette_entry.label}
+    </span>
   );
 }
