@@ -18,6 +18,8 @@ export default function EditClientPage() {
   const [saveMsg, setSaveMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [connMsg, setConnMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [inviteMsg, setInviteMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [inviting, setInviting] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -168,6 +170,37 @@ export default function EditClientPage() {
       setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setActioning(false);
+    }
+  }
+
+  async function onSendInvite() {
+    if (!client) return;
+    if (!client.owner_email || !client.owner_email.includes("@")) {
+      setInviteMsg({
+        kind: "err",
+        text: "Set a valid owner email above before sending the invite.",
+      });
+      return;
+    }
+    if (
+      !confirm(
+        `Send a portal invite email to ${client.owner_email}? They'll receive a magic-link to sign in to the client portal.`,
+      )
+    ) {
+      return;
+    }
+    setInviting(true);
+    setInviteMsg(null);
+    try {
+      const res = await api.invitePortal(client.id);
+      setInviteMsg({ kind: "ok", text: res.message ?? `Invite sent to ${res.email}.` });
+    } catch (e) {
+      setInviteMsg({
+        kind: "err",
+        text: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -440,6 +473,38 @@ export default function EditClientPage() {
               }`}
             >
               {connMsg.text}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Portal access
+          </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Send a magic-link invite to <strong>{client.owner_email || "(no email set)"}</strong>.
+            First click on the link creates their portal account; subsequent
+            sign-ins use the standard magic-link flow at /login.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onSendInvite}
+              disabled={inviting || !client.owner_email}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {inviting ? "Sending…" : "Send portal invite"}
+            </button>
+          </div>
+          {inviteMsg && (
+            <div
+              className={`mt-4 rounded-md p-3 text-sm ${
+                inviteMsg.kind === "ok"
+                  ? "bg-green-50 text-green-800"
+                  : "bg-red-50 text-red-800"
+              }`}
+            >
+              {inviteMsg.text}
             </div>
           )}
         </div>

@@ -203,6 +203,18 @@ export function buildApi(getAccessToken: GetAccessToken) {
       request<{ ok: boolean }>(`/api/clients/${id}/xero/disconnect`, {
         method: "POST",
       }),
+    /**
+     * Trigger a Supabase magic-link invite to the client's owner_email so
+     * they can self-onboard into the portal. Admin-only on the backend
+     * (relies on SUPABASE_SERVICE_ROLE_KEY env var).
+     */
+    invitePortal: (id: number) =>
+      request<{
+        status: string;
+        client_id: number;
+        email: string;
+        message: string;
+      }>(`/api/clients/${id}/invite`, { method: "POST" }),
     listTargets: (clientId: number) =>
       request<Target[]>(`/api/clients/${clientId}/targets`),
     createTarget: (clientId: number, body: TargetCreate) =>
