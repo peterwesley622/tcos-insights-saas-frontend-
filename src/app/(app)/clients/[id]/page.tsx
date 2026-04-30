@@ -18,7 +18,7 @@ export default function EditClientPage() {
   const [saveMsg, setSaveMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [connMsg, setConnMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [inviteMsg, setInviteMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [inviteMsg, setInviteMsg] = useState<{ kind: "ok" | "info" | "err"; text: string } | null>(null);
   const [inviting, setInviting] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
@@ -193,7 +193,9 @@ export default function EditClientPage() {
     setInviteMsg(null);
     try {
       const res = await api.invitePortal(client.id);
-      setInviteMsg({ kind: "ok", text: res.message ?? `Invite sent to ${res.email}.` });
+      // "already_registered" is a soft success — render as info, not error.
+      const kind = res.status === "already_registered" ? "info" : "ok";
+      setInviteMsg({ kind, text: res.message ?? `Invite sent to ${res.email}.` });
     } catch (e) {
       setInviteMsg({
         kind: "err",
@@ -501,6 +503,8 @@ export default function EditClientPage() {
               className={`mt-4 rounded-md p-3 text-sm ${
                 inviteMsg.kind === "ok"
                   ? "bg-green-50 text-green-800"
+                  : inviteMsg.kind === "info"
+                  ? "bg-blue-50 text-blue-800"
                   : "bg-red-50 text-red-800"
               }`}
             >
