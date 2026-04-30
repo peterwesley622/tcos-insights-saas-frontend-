@@ -233,6 +233,15 @@ export function buildApi(getAccessToken: GetAccessToken) {
       requestText(`/api/clients/${clientId}/reports/scorecard?format=html`, {
         method: "POST",
       }),
+    /**
+     * Per-client Simpro labour preview. Mirrors generateScorecardHtml /
+     * generateQuotesJobsHtml in shape — clients can call this for their
+     * own client_id (the older /api/reports/generate is admin-only).
+     */
+    generateClientSimproHtml: (clientId: number) =>
+      requestText(`/api/clients/${clientId}/reports/simpro?format=html`, {
+        method: "POST",
+      }),
     generateQuotesJobsHtml: (clientId: number) =>
       requestText(`/api/clients/${clientId}/reports/quotes?format=html`, {
         method: "POST",
