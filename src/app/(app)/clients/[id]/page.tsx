@@ -172,6 +172,37 @@ export default function EditClientPage() {
     }
   }
 
+  async function onTestDrive() {
+    if (!client) return;
+    setActioning(true);
+    setConnMsg(null);
+    try {
+      const r = await api.testDrive(client.id);
+      if (r.status === "ok") {
+        setConnMsg({
+          kind: "ok",
+          text: `Drive OK — folder "${r.folder_name}" is accessible.`,
+        });
+      } else if (r.status === "disabled") {
+        setConnMsg({
+          kind: "err",
+          text: `Drive disabled — service account JSON not configured on Railway.`,
+        });
+      } else if (r.status === "not_found") {
+        setConnMsg({
+          kind: "err",
+          text: `Drive: folder not visible. Share it with ${r.service_account_email ?? "the service account"} (Editor) and try again.`,
+        });
+      } else {
+        setConnMsg({ kind: "err", text: `Drive: ${r.error}` });
+      }
+    } catch (e) {
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setActioning(false);
+    }
+  }
+
   async function onConnectXero() {
     if (!client) return;
     setActioning(true);
@@ -579,6 +610,15 @@ export default function EditClientPage() {
                 Connect Xero
               </button>
             )}
+            <button
+              type="button"
+              onClick={onTestDrive}
+              disabled={actioning || !driveFolderId}
+              title={!driveFolderId ? "Set a Google Drive folder ID first." : undefined}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Test Drive
+            </button>
           </div>
           {connMsg && (
             <div

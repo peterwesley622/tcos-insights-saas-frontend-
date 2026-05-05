@@ -203,6 +203,13 @@ export function buildApi(getAccessToken: GetAccessToken) {
         | { status: "connected"; organisation: string; tenant_id: string }
         | { status: "error"; message: string }
       >(`/api/clients/${id}/test-xero`, { method: "POST" }),
+    testDrive: (id: number) =>
+      request<
+        | { status: "ok"; folder_name: string; service_account_email?: string }
+        | { status: "disabled"; error: string }
+        | { status: "not_found"; error: string; service_account_email?: string }
+        | { status: "failed"; error: string }
+      >(`/api/clients/${id}/test-drive`, { method: "POST" }),
     xeroConnectUrl: (id: number) =>
       `${getApiBaseUrl()}/api/clients/${id}/xero/connect`,
     /**
