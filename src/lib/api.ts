@@ -19,10 +19,7 @@ export type Client = {
   gp_threshold_high: number | null;
   wages_in_opex: boolean;
   cc_emails: string | null;
-  labour_hours_min: number | null;
   enabled_reports: string;
-  report_day: string;
-  report_hour: number;
   drive_folder_id: string | null;
   active: boolean | null;
   xero_connected: boolean;
@@ -54,10 +51,7 @@ export type ClientUpdate = Partial<{
   gp_threshold_high: number | null;
   wages_in_opex: boolean;
   cc_emails: string | null;
-  labour_hours_min: number | null;
   enabled_reports: string;
-  report_day: string;
-  report_hour: number;
   drive_folder_id: string | null;
   active: boolean | null;
 }>;

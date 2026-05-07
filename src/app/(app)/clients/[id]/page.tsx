@@ -32,14 +32,11 @@ export default function EditClientPage() {
   const [siteWorkers, setSiteWorkers] = useState<number | "">("");
   const [wagesInOpex, setWagesInOpex] = useState(false);
   const [ccEmails, setCcEmails] = useState("");
-  const [labourHoursMin, setLabourHoursMin] = useState<number | "">("");
   const [enabledReports, setEnabledReports] = useState({
     simpro: true,
     scorecard: true,
     quotes: true,
   });
-  const [reportDay, setReportDay] = useState("monday");
-  const [reportHour, setReportHour] = useState<number>(6);
   const [driveFolderId, setDriveFolderId] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -61,15 +58,12 @@ export default function EditClientPage() {
         setSiteWorkers(c.num_site_workers ?? "");
         setWagesInOpex(Boolean(c.wages_in_opex));
         setCcEmails(c.cc_emails ?? "");
-        setLabourHoursMin(c.labour_hours_min ?? "");
         const parts = (c.enabled_reports || "simpro,scorecard,quotes").split(",").map((s) => s.trim());
         setEnabledReports({
           simpro: parts.includes("simpro"),
           scorecard: parts.includes("scorecard"),
           quotes: parts.includes("quotes"),
         });
-        setReportDay(c.report_day || "monday");
-        setReportHour(c.report_hour ?? 6);
         setDriveFolderId(c.drive_folder_id ?? "");
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
@@ -95,15 +89,11 @@ export default function EditClientPage() {
     if (wagesInOpex !== Boolean(client.wages_in_opex)) patch.wages_in_opex = wagesInOpex;
     const cc = ccEmails.trim() || null;
     if (cc !== client.cc_emails) patch.cc_emails = cc;
-    const lhm = labourHoursMin === "" ? null : Number(labourHoursMin);
-    if (lhm !== client.labour_hours_min) patch.labour_hours_min = lhm;
     const er = Object.entries(enabledReports)
       .filter(([, v]) => v)
       .map(([k]) => k)
       .join(",") || "simpro,scorecard,quotes";
     if (er !== client.enabled_reports) patch.enabled_reports = er;
-    if (reportDay !== client.report_day) patch.report_day = reportDay;
-    if (reportHour !== client.report_hour) patch.report_hour = reportHour;
     const dfid = driveFolderId.trim() || null;
     if (dfid !== client.drive_folder_id) patch.drive_folder_id = dfid;
     return patch;
@@ -471,46 +461,12 @@ export default function EditClientPage() {
           </Section>
 
           <Section title="Report delivery">
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Report day">
-                <select
-                  value={reportDay}
-                  onChange={(e) => setReportDay(e.target.value)}
-                  className={inputCls}
-                >
-                  {["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map((d) => (
-                    <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Report hour (0–23, AEST)">
-                <input
-                  type="number"
-                  min={0}
-                  max={23}
-                  value={reportHour}
-                  onChange={(e) => setReportHour(Number(e.target.value))}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
             <Field label="CC emails (semicolon-separated)">
               <input
                 type="text"
                 value={ccEmails}
                 onChange={(e) => setCcEmails(e.target.value)}
                 placeholder="e.g. peter@bbo.com.au; admin@bbo.com.au"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Min labour hours / week">
-              <input
-                type="number"
-                min={0}
-                step="0.5"
-                value={labourHoursMin}
-                onChange={(e) => setLabourHoursMin(e.target.value === "" ? "" : Number(e.target.value))}
-                placeholder="e.g. 160"
                 className={inputCls}
               />
             </Field>
