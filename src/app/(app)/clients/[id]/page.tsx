@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { type Client, type ClientUpdate } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
@@ -9,6 +9,7 @@ import { useApi } from "@/lib/api-browser";
 export default function EditClientPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const api = useApi();
   const clientId = Number(params.id);
 
@@ -41,6 +42,28 @@ export default function EditClientPage() {
 
   const [saving, setSaving] = useState(false);
   const [actioning, setActioning] = useState(false);
+
+  // Pick up the ?xero=... query param the backend sets after the OAuth
+  // callback redirects back to this page, render an inline banner, then
+  // strip the param so a refresh doesn't re-show stale state.
+  useEffect(() => {
+    if (!searchParams) return;
+    const xero = searchParams.get("xero");
+    if (!xero) return;
+    if (xero === "connected") {
+      const tenant = searchParams.get("tenant") || "";
+      setConnMsg({
+        kind: "ok",
+        text: tenant ? `Xero connected — ${tenant}.` : "Xero connected.",
+      });
+    } else if (xero === "error") {
+      const detail = searchParams.get("detail") || "unknown error";
+      setConnMsg({ kind: "err", text: `Xero connect failed: ${detail}` });
+    }
+    // Drop the query params from the URL without reloading or pushing
+    // a new history entry.
+    router.replace(`/clients/${clientId}`);
+  }, [searchParams, clientId, router]);
 
   useEffect(() => {
     if (!clientId) return;
