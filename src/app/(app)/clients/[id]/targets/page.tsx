@@ -30,26 +30,38 @@ const FIELD_LABELS: Record<NumericField, string> = {
   rev_per_worker: "Rev / worker",
 };
 
-function defaultPeriod() {
-  const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
-  const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  return {
-    period_start: first.toISOString().slice(0, 10),
-    period_end: last.toISOString().slice(0, 10),
-  };
-}
-
-function fmtPeriod(target: Target) {
-  return `${target.period_start} → ${target.period_end ?? "open"}`;
-}
-
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+function fmtPeriod(t: Target) {
+  return `${t.period_start} → ${t.period_end ?? "open"}`;
+}
+
+/**
+ * A "standing" target is the one with no end date — it's the currently
+ * active monthly target. Any target with a period_end has been closed
+ * (replaced by a newer one) and lives in History only.
+ */
+function isStanding(t: Target) {
+  return t.period_end === null || t.period_end === undefined;
+}
+
+function emptyForm(): Record<NumericField, number> {
+  return {
+    revenue: 0,
+    materials: 0,
+    subcontractors: 0,
+    wages: 0,
+    gross_profit: 0,
+    overheads: 0,
+    net_profit: 0,
+    rev_per_worker: 0,
+  };
 }
 
 export default function TargetsPage() {
@@ -63,18 +75,8 @@ export default function TargetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  const [editingId, setEditingId] = useState<number | "new" | null>(null);
-  const [form, setForm] = useState<TargetCreate>(() => ({
-    ...defaultPeriod(),
-    revenue: 0,
-    materials: 0,
-    subcontractors: 0,
-    wages: 0,
-    gross_profit: 0,
-    overheads: 0,
-    net_profit: 0,
-    rev_per_worker: 0,
-  }));
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Record<NumericField, number>>(emptyForm());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -88,41 +90,30 @@ export default function TargetsPage() {
       .finally(() => setLoading(false));
   }, [clientId]);
 
-  function startNew() {
-    setEditingId("new");
-    setMsg(null);
-    setForm({
-      ...defaultPeriod(),
-      revenue: 0,
-      materials: 0,
-      subcontractors: 0,
-      wages: 0,
-      gross_profit: 0,
-      overheads: 0,
-      net_profit: 0,
-      rev_per_worker: 0,
-    });
-  }
+  const standing = targets.find(isStanding) ?? null;
+  const history = targets.filter((t) => !isStanding(t));
 
-  function startEdit(t: Target) {
-    setEditingId(t.id);
+  function startEdit() {
     setMsg(null);
-    setForm({
-      period_start: t.period_start,
-      period_end: t.period_end ?? "",
-      revenue: t.revenue,
-      materials: t.materials,
-      subcontractors: t.subcontractors,
-      wages: t.wages,
-      gross_profit: t.gross_profit,
-      overheads: t.overheads,
-      net_profit: t.net_profit,
-      rev_per_worker: t.rev_per_worker,
-    });
+    setEditing(true);
+    if (standing) {
+      setForm({
+        revenue: standing.revenue,
+        materials: standing.materials,
+        subcontractors: standing.subcontractors,
+        wages: standing.wages,
+        gross_profit: standing.gross_profit,
+        overheads: standing.overheads,
+        net_profit: standing.net_profit,
+        rev_per_worker: standing.rev_per_worker,
+      });
+    } else {
+      setForm(emptyForm());
+    }
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    setEditing(false);
     setMsg(null);
   }
 
@@ -131,20 +122,18 @@ export default function TargetsPage() {
     setSaving(true);
     setMsg(null);
     try {
-      const payload: TargetCreate = {
-        ...form,
-        period_end: form.period_end || null,
-      };
-      if (editingId === "new") {
-        const created = await api.createTarget(clientId, payload);
-        setTargets((ts) => [...ts, created]);
-        setMsg({ kind: "ok", text: "Target added." });
-      } else if (typeof editingId === "number") {
-        const updated = await api.updateTarget(clientId, editingId, payload);
-        setTargets((ts) => ts.map((t) => (t.id === updated.id ? updated : t)));
-        setMsg({ kind: "ok", text: "Target updated." });
-      }
-      setEditingId(null);
+      // Always POST a new standing target — backend auto-closes the
+      // previous open one. We never PATCH a standing target in this
+      // UI; the user "rolling forward" semantically means a new entry.
+      const payload: TargetCreate = { ...form };
+      const created = await api.createTarget(clientId, payload);
+      // Refresh the full list so the freshly-closed previous standing
+      // target shows up in History with its new period_end.
+      const next = await api.listTargets(clientId);
+      setTargets(next);
+      setMsg({ kind: "ok", text: "Monthly target updated." });
+      setEditing(false);
+      void created;
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -152,13 +141,13 @@ export default function TargetsPage() {
     }
   }
 
-  async function onDelete(t: Target) {
-    if (!confirm(`Delete target for ${fmtPeriod(t)}?`)) return;
+  async function onDeleteHistorical(t: Target) {
+    if (!confirm(`Delete the historical target for ${fmtPeriod(t)}? This won't affect the current standing target.`)) return;
     setMsg(null);
     try {
       await api.deleteTarget(clientId, t.id);
       setTargets((ts) => ts.filter((x) => x.id !== t.id));
-      setMsg({ kind: "ok", text: "Target deleted." });
+      setMsg({ kind: "ok", text: "Historical target deleted." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     }
@@ -194,7 +183,9 @@ export default function TargetsPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Targets — {client.business_name}</h1>
             <p className="text-sm text-slate-500">
-              Monthly financial targets used by the scorecard report.
+              One standing monthly target. The financial scorecard compares
+              every month's actuals against this target — no need to set
+              targets per month.
             </p>
           </div>
           <Link
@@ -215,124 +206,131 @@ export default function TargetsPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        {/* Current standing target */}
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Existing targets
+              Current monthly target
             </h2>
-            {editingId === null && (
+            {!editing && (
               <button
-                onClick={startNew}
+                onClick={startEdit}
                 className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-700"
               >
-                Add target
+                {standing ? "Update target" : "Set target"}
               </button>
             )}
           </div>
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Period</th>
-                <th className="px-4 py-2 text-right">Revenue</th>
-                <th className="px-4 py-2 text-right">GP</th>
-                <th className="px-4 py-2 text-right">Net profit</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {targets.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
-                    No targets yet. Click <strong>Add target</strong> to set the first one.
-                  </td>
-                </tr>
-              )}
-              {targets.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{fmtPeriod(t)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.revenue)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.gross_profit)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.net_profit)}</td>
-                  <td className="px-4 py-3 text-right space-x-3">
-                    <button
-                      onClick={() => startEdit(t)}
-                      className="text-sm font-medium text-slate-700 hover:text-slate-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDelete(t)}
-                      className="text-sm font-medium text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+
+          {!editing && !standing && (
+            <p className="text-sm text-slate-500 italic">
+              No standing target set. Click <strong>Set target</strong> to
+              create one — the scorecard report can't run without it.
+            </p>
+          )}
+
+          {!editing && standing && (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4">
+              {NUMERIC_FIELDS.map((field) => (
+                <div key={field}>
+                  <dt className="text-xs uppercase tracking-wide text-slate-500">
+                    {FIELD_LABELS[field]}
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-slate-900">
+                    {fmtMoney(standing[field])}
+                  </dd>
+                </div>
               ))}
-            </tbody>
-          </table>
+              <div className="col-span-2 md:col-span-4 mt-1 text-xs text-slate-500">
+                Active since {standing.period_start}.
+              </div>
+            </dl>
+          )}
+
+          {editing && (
+            <form onSubmit={onSubmit} className="space-y-6">
+              <p className="text-xs text-slate-500">
+                Updating the target closes the current one as of yesterday
+                and starts a new one today. The previous values are kept in
+                History below.
+              </p>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {NUMERIC_FIELDS.map((field) => (
+                  <Field key={field} label={`${FIELD_LABELS[field]} (AUD)`}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form[field]}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, [field]: Number(e.target.value) }))
+                      }
+                      className={inputCls}
+                    />
+                  </Field>
+                ))}
+              </div>
+              <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save target"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
-        {editingId !== null && (
-          <form
-            onSubmit={onSubmit}
-            className="mt-6 space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              {editingId === "new" ? "New target" : "Edit target"}
-            </h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Period start (YYYY-MM-DD)" required>
-                <input
-                  type="date"
-                  required
-                  value={form.period_start}
-                  onChange={(e) => setForm((f) => ({ ...f, period_start: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Period end (YYYY-MM-DD)">
-                <input
-                  type="date"
-                  value={form.period_end ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, period_end: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
+        {/* History */}
+        {history.length > 0 && (
+          <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                History
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Previous standing targets, closed when a newer one replaced
+                them. Kept for reference.
+              </p>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {NUMERIC_FIELDS.map((field) => (
-                <Field key={field} label={`${FIELD_LABELS[field]} (AUD)`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form[field] ?? 0}
-                    onChange={(e) => setForm((f) => ({ ...f, [field]: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
-                </Field>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
-              >
-                {saving ? "Saving…" : editingId === "new" ? "Add target" : "Save changes"}
-              </button>
-            </div>
-          </form>
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Period</th>
+                  <th className="px-4 py-2 text-right">Revenue</th>
+                  <th className="px-4 py-2 text-right">GP</th>
+                  <th className="px-4 py-2 text-right">Net profit</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {history.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium text-slate-900">{fmtPeriod(t)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.revenue)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.gross_profit)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.net_profit)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => onDeleteHistorical(t)}
+                        className="text-sm font-medium text-red-600 hover:text-red-800"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </main>
@@ -344,18 +342,14 @@ const inputCls =
 
 function Field({
   label,
-  required,
   children,
 }: {
   label: string;
-  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-600">*</span>}
-      </span>
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       {children}
     </label>
   );

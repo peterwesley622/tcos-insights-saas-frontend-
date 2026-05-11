@@ -79,7 +79,11 @@ export type Target = {
 };
 
 export type TargetCreate = {
-  period_start: string;
+  // Optional in the rolling-forward model: omit both period fields and
+  // the backend treats this POST as "set the new standing target",
+  // auto-closing any open target on the same client. Pass explicit
+  // dates only when backfilling historical entries.
+  period_start?: string;
   period_end?: string | null;
   revenue?: number;
   materials?: number;

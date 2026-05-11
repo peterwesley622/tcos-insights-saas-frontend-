@@ -28,26 +28,33 @@ const FIELD_LABELS: Record<NumericField, string> = {
   rev_per_worker: "Rev / worker",
 };
 
-function defaultPeriod() {
-  const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
-  const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  return {
-    period_start: first.toISOString().slice(0, 10),
-    period_end: last.toISOString().slice(0, 10),
-  };
-}
-
-function fmtPeriod(target: Target) {
-  return `${target.period_start} → ${target.period_end ?? "open"}`;
-}
-
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+function fmtPeriod(t: Target) {
+  return `${t.period_start} → ${t.period_end ?? "open"}`;
+}
+
+function isStanding(t: Target) {
+  return t.period_end === null || t.period_end === undefined;
+}
+
+function emptyForm(): Record<NumericField, number> {
+  return {
+    revenue: 0,
+    materials: 0,
+    subcontractors: 0,
+    wages: 0,
+    gross_profit: 0,
+    overheads: 0,
+    net_profit: 0,
+    rev_per_worker: 0,
+  };
 }
 
 export default function PortalTargetsPage() {
@@ -59,18 +66,8 @@ export default function PortalTargetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  const [editingId, setEditingId] = useState<number | "new" | null>(null);
-  const [form, setForm] = useState<TargetCreate>(() => ({
-    ...defaultPeriod(),
-    revenue: 0,
-    materials: 0,
-    subcontractors: 0,
-    wages: 0,
-    gross_profit: 0,
-    overheads: 0,
-    net_profit: 0,
-    rev_per_worker: 0,
-  }));
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Record<NumericField, number>>(emptyForm());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -90,41 +87,30 @@ export default function PortalTargetsPage() {
       .finally(() => setLoading(false));
   }, [api]);
 
-  function startNew() {
-    setEditingId("new");
-    setMsg(null);
-    setForm({
-      ...defaultPeriod(),
-      revenue: 0,
-      materials: 0,
-      subcontractors: 0,
-      wages: 0,
-      gross_profit: 0,
-      overheads: 0,
-      net_profit: 0,
-      rev_per_worker: 0,
-    });
-  }
+  const standing = targets.find(isStanding) ?? null;
+  const history = targets.filter((t) => !isStanding(t));
 
-  function startEdit(t: Target) {
-    setEditingId(t.id);
+  function startEdit() {
     setMsg(null);
-    setForm({
-      period_start: t.period_start,
-      period_end: t.period_end ?? "",
-      revenue: t.revenue,
-      materials: t.materials,
-      subcontractors: t.subcontractors,
-      wages: t.wages,
-      gross_profit: t.gross_profit,
-      overheads: t.overheads,
-      net_profit: t.net_profit,
-      rev_per_worker: t.rev_per_worker,
-    });
+    setEditing(true);
+    if (standing) {
+      setForm({
+        revenue: standing.revenue,
+        materials: standing.materials,
+        subcontractors: standing.subcontractors,
+        wages: standing.wages,
+        gross_profit: standing.gross_profit,
+        overheads: standing.overheads,
+        net_profit: standing.net_profit,
+        rev_per_worker: standing.rev_per_worker,
+      });
+    } else {
+      setForm(emptyForm());
+    }
   }
 
   function cancelEdit() {
-    setEditingId(null);
+    setEditing(false);
     setMsg(null);
   }
 
@@ -134,37 +120,16 @@ export default function PortalTargetsPage() {
     setSaving(true);
     setMsg(null);
     try {
-      const payload: TargetCreate = {
-        ...form,
-        period_end: form.period_end || null,
-      };
-      if (editingId === "new") {
-        const created = await api.createTarget(client.id, payload);
-        setTargets((ts) => [...ts, created]);
-        setMsg({ kind: "ok", text: "Target added." });
-      } else if (typeof editingId === "number") {
-        const updated = await api.updateTarget(client.id, editingId, payload);
-        setTargets((ts) => ts.map((t) => (t.id === updated.id ? updated : t)));
-        setMsg({ kind: "ok", text: "Target updated." });
-      }
-      setEditingId(null);
+      const payload: TargetCreate = { ...form };
+      await api.createTarget(client.id, payload);
+      const next = await api.listTargets(client.id);
+      setTargets(next);
+      setMsg({ kind: "ok", text: "Monthly target updated." });
+      setEditing(false);
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function onDelete(t: Target) {
-    if (!client) return;
-    if (!confirm(`Delete target for ${fmtPeriod(t)}?`)) return;
-    setMsg(null);
-    try {
-      await api.deleteTarget(client.id, t.id);
-      setTargets((ts) => ts.filter((x) => x.id !== t.id));
-      setMsg({ kind: "ok", text: "Target deleted." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -192,11 +157,11 @@ export default function PortalTargetsPage() {
     <main className="min-h-screen bg-slate-50 p-8">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Your financial targets</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Your monthly targets</h1>
           <p className="text-sm text-slate-500">
-            Set monthly goals. Your weekly scorecard report compares actual
-            performance to these numbers and colour-codes each metric green /
-            amber / red.
+            Set one standing monthly target. Your weekly scorecard report
+            compares every month's actuals to it and colour-codes each
+            metric green / amber / red.
           </p>
         </header>
 
@@ -210,125 +175,120 @@ export default function PortalTargetsPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        {/* Current standing target */}
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Existing targets
+              Current monthly target
             </h2>
-            {editingId === null && (
+            {!editing && (
               <button
-                onClick={startNew}
+                onClick={startEdit}
                 className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-700"
               >
-                Add target
+                {standing ? "Update target" : "Set target"}
               </button>
             )}
           </div>
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Period</th>
-                <th className="px-4 py-2 text-right">Revenue</th>
-                <th className="px-4 py-2 text-right">GP</th>
-                <th className="px-4 py-2 text-right">Net profit</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {targets.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
-                    No targets yet. Click <strong>Add target</strong> to set your
-                    first month.
-                  </td>
-                </tr>
-              )}
-              {targets.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{fmtPeriod(t)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.revenue)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.gross_profit)}</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.net_profit)}</td>
-                  <td className="px-4 py-3 text-right space-x-3">
-                    <button
-                      onClick={() => startEdit(t)}
-                      className="text-sm font-medium text-slate-700 hover:text-slate-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => onDelete(t)}
-                      className="text-sm font-medium text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+
+          {!editing && !standing && (
+            <p className="text-sm text-slate-500 italic">
+              No standing target set yet. Click <strong>Set target</strong> to
+              create one — your scorecard report can't run without it.
+            </p>
+          )}
+
+          {!editing && standing && (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4">
+              {NUMERIC_FIELDS.map((field) => (
+                <div key={field}>
+                  <dt className="text-xs uppercase tracking-wide text-slate-500">
+                    {FIELD_LABELS[field]}
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-slate-900">
+                    {fmtMoney(standing[field])}
+                  </dd>
+                </div>
               ))}
-            </tbody>
-          </table>
+              <div className="col-span-2 md:col-span-4 mt-1 text-xs text-slate-500">
+                Active since {standing.period_start}.
+              </div>
+            </dl>
+          )}
+
+          {editing && (
+            <form onSubmit={onSubmit} className="space-y-6">
+              <p className="text-xs text-slate-500">
+                Saving these numbers closes your previous target and starts
+                a new one today. Past targets stay in History for reference.
+              </p>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {NUMERIC_FIELDS.map((field) => (
+                  <Field key={field} label={`${FIELD_LABELS[field]} (AUD)`}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form[field]}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, [field]: Number(e.target.value) }))
+                      }
+                      className={inputCls}
+                    />
+                  </Field>
+                ))}
+              </div>
+              <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save target"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
-        {editingId !== null && (
-          <form
-            onSubmit={onSubmit}
-            className="mt-6 space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              {editingId === "new" ? "New target" : "Edit target"}
-            </h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Period start" required>
-                <input
-                  type="date"
-                  required
-                  value={form.period_start}
-                  onChange={(e) => setForm((f) => ({ ...f, period_start: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Period end">
-                <input
-                  type="date"
-                  value={form.period_end ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, period_end: e.target.value }))}
-                  className={inputCls}
-                />
-              </Field>
+        {/* History */}
+        {history.length > 0 && (
+          <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                History
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Previous targets, closed when a newer one replaced them.
+              </p>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {NUMERIC_FIELDS.map((field) => (
-                <Field key={field} label={`${FIELD_LABELS[field]} (AUD)`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form[field] ?? 0}
-                    onChange={(e) => setForm((f) => ({ ...f, [field]: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
-                </Field>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
-              >
-                {saving ? "Saving…" : editingId === "new" ? "Add target" : "Save changes"}
-              </button>
-            </div>
-          </form>
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Period</th>
+                  <th className="px-4 py-2 text-right">Revenue</th>
+                  <th className="px-4 py-2 text-right">GP</th>
+                  <th className="px-4 py-2 text-right">Net profit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {history.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium text-slate-900">{fmtPeriod(t)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.revenue)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.gross_profit)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.net_profit)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </main>
@@ -340,18 +300,14 @@ const inputCls =
 
 function Field({
   label,
-  required,
   children,
 }: {
   label: string;
-  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-600">*</span>}
-      </span>
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
       {children}
     </label>
   );
