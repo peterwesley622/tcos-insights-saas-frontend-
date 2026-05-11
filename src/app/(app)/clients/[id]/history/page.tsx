@@ -10,6 +10,7 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   simpro_weekly: "Simpro labour",
   xero_mtd: "Xero scorecard (MTD)",
   xero_monthly: "Xero scorecard (monthly)",
+  quotes_jobs: "Quote follow-up & job health",
 };
 
 function statusClass(status: string) {
@@ -146,6 +147,7 @@ export default function HistoryPage() {
               {logs.map((log) => {
                 const hasError = !!log.error_message;
                 const isExpanded = expanded.has(log.id);
+                const hasArchive = !!log.archive_url;
                 return (
                   <Fragment key={log.id}>
                     <tr className="hover:bg-slate-50">
@@ -160,7 +162,17 @@ export default function HistoryPage() {
                           {log.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right space-x-4">
+                        {hasArchive && (
+                          <a
+                            href={log.archive_url!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-700 hover:text-blue-900"
+                          >
+                            Open ↗
+                          </a>
+                        )}
                         {hasError && (
                           <button
                             onClick={() => toggleExpand(log.id)}

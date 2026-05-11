@@ -251,12 +251,13 @@ export default function PortalReportsPage() {
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Report</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                     No reports yet. They start arriving the Monday after your
                     bookkeeper sets you up.
                   </td>
@@ -277,6 +278,18 @@ export default function PortalReportsPage() {
                       >
                         {log.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {log.archive_url && (
+                        <a
+                          href={log.archive_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-700 hover:text-blue-900"
+                        >
+                          Open ↗
+                        </a>
+                      )}
                     </td>
                   </tr>
                 </Fragment>

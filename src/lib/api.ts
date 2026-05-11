@@ -107,6 +107,11 @@ export type ReportLog = {
   status: string;
   sent_at: string | null;
   error_message: string | null;
+  // Drive web view link populated when the report HTML was successfully
+  // archived. Null for rows from before Drive archiving was set up,
+  // failed archives, or non-success statuses. UI renders an "Open" link
+  // only when this is truthy.
+  archive_url: string | null;
 };
 
 export type ReportSendResult = {
