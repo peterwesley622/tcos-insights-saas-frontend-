@@ -225,7 +225,7 @@ export default function ReportsPage() {
       {sendModal && (
         <SendModal
           kind={sendModal}
-          recipientEmail={client.owner_email}
+          recipientEmail={client.owner_emails}
           testEmail={testEmail}
           setTestEmail={setTestEmail}
           dryRun={dryRun}

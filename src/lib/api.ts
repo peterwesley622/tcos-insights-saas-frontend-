@@ -10,7 +10,7 @@ export type Client = {
   id: number;
   business_name: string;
   owner_name: string | null;
-  owner_email: string | null;
+  owner_emails: string | null;
   simpro_base_url: string | null;
   simpro_api_key_masked: string | null;
   simpro_company_id: number | null;
@@ -29,7 +29,7 @@ export type Client = {
 export type ClientCreate = {
   business_name: string;
   owner_name?: string | null;
-  owner_email?: string | null;
+  owner_emails?: string | null;
   simpro_base_url: string;
   simpro_api_key: string;
   simpro_company_id?: number;
@@ -42,7 +42,7 @@ export type ClientCreate = {
 export type ClientUpdate = Partial<{
   business_name: string;
   owner_name: string | null;
-  owner_email: string | null;
+  owner_emails: string | null;
   simpro_base_url: string | null;
   simpro_api_key: string | null;
   simpro_company_id: number | null;
@@ -217,17 +217,20 @@ export function buildApi(getAccessToken: GetAccessToken) {
         method: "POST",
       }),
     /**
-     * Trigger a Supabase magic-link invite to the client's owner_email so
-     * they can self-onboard into the portal. Admin-only on the backend
-     * (relies on SUPABASE_SERVICE_ROLE_KEY env var).
+     * Trigger a Supabase magic-link invite to one owner email on a client.
+     * Multi-owner clients can invite each owner separately by passing the
+     * email param; omitting it defaults to the first owner on the list.
+     * Admin-only on the backend (relies on SUPABASE_SERVICE_ROLE_KEY).
      */
-    invitePortal: (id: number) =>
-      request<{
+    invitePortal: (id: number, email?: string) => {
+      const qs = email ? `?email=${encodeURIComponent(email)}` : "";
+      return request<{
         status: string;
         client_id: number;
         email: string;
         message: string;
-      }>(`/api/clients/${id}/invite`, { method: "POST" }),
+      }>(`/api/clients/${id}/invite${qs}`, { method: "POST" });
+    },
     listTargets: (clientId: number) =>
       request<Target[]>(`/api/clients/${clientId}/targets`),
     createTarget: (clientId: number, body: TargetCreate) =>

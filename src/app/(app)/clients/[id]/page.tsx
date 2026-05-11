@@ -24,7 +24,7 @@ export default function EditClientPage() {
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerEmails, setOwnerEmails] = useState("");
   const [simproUrl, setSimproUrl] = useState("");
   const [newSimproKey, setNewSimproKey] = useState("");
   const [companyId, setCompanyId] = useState<number | "">("");
@@ -73,7 +73,7 @@ export default function EditClientPage() {
         setClient(c);
         setBusinessName(c.business_name);
         setOwnerName(c.owner_name ?? "");
-        setOwnerEmail(c.owner_email ?? "");
+        setOwnerEmails(c.owner_emails ?? "");
         setSimproUrl(c.simpro_base_url ?? "");
         setCompanyId(c.simpro_company_id ?? "");
         setGpLow(c.gp_threshold_low ?? "");
@@ -98,7 +98,7 @@ export default function EditClientPage() {
     const patch: ClientUpdate = {};
     if (businessName !== client.business_name) patch.business_name = businessName;
     if ((ownerName || null) !== client.owner_name) patch.owner_name = ownerName || null;
-    if ((ownerEmail || null) !== client.owner_email) patch.owner_email = ownerEmail || null;
+    if ((ownerEmails || null) !== client.owner_emails) patch.owner_emails = ownerEmails || null;
     if ((simproUrl || null) !== client.simpro_base_url) patch.simpro_base_url = simproUrl || null;
     if (newSimproKey.trim()) patch.simpro_api_key = newSimproKey.trim();
     const cid = companyId === "" ? null : Number(companyId);
@@ -251,18 +251,15 @@ export default function EditClientPage() {
     }
   }
 
-  async function onSendInvite() {
+  async function onSendInvite(targetEmail: string) {
     if (!client) return;
-    if (!client.owner_email || !client.owner_email.includes("@")) {
-      setInviteMsg({
-        kind: "err",
-        text: "Set a valid owner email above before sending the invite.",
-      });
+    if (!targetEmail || !targetEmail.includes("@")) {
+      setInviteMsg({ kind: "err", text: "Invalid email address." });
       return;
     }
     if (
       !confirm(
-        `Send a portal invite email to ${client.owner_email}? They'll receive a magic-link to sign in to the client portal.`,
+        `Send a portal invite email to ${targetEmail}? They'll receive a magic-link to sign in to the client portal.`,
       )
     ) {
       return;
@@ -270,7 +267,7 @@ export default function EditClientPage() {
     setInviting(true);
     setInviteMsg(null);
     try {
-      const res = await api.invitePortal(client.id);
+      const res = await api.invitePortal(client.id, targetEmail);
       // "already_registered" is a soft success — render as info, not error.
       const kind = res.status === "already_registered" ? "info" : "ok";
       setInviteMsg({ kind, text: res.message ?? `Invite sent to ${res.email}.` });
@@ -282,6 +279,23 @@ export default function EditClientPage() {
     } finally {
       setInviting(false);
     }
+  }
+
+  // Helper: parse the persisted owner_emails string into a clean list
+  // so the JSX can render a row per owner with its own Invite button.
+  function parseOwnerEmails(raw: string | null | undefined): string[] {
+    if (!raw) return [];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const part of raw.replace(/,/g, ";").split(";")) {
+      const addr = part.trim();
+      if (!addr || !addr.includes("@")) continue;
+      const key = addr.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(addr);
+    }
+    return out;
   }
 
   async function onToggleActive() {
@@ -391,13 +405,17 @@ export default function EditClientPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Owner email">
+            <Field label="Owner emails">
               <input
-                type="email"
-                value={ownerEmail}
-                onChange={(e) => setOwnerEmail(e.target.value)}
+                type="text"
+                value={ownerEmails}
+                onChange={(e) => setOwnerEmails(e.target.value)}
+                placeholder="One or more, semicolon-separated"
                 className={inputCls}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Each address receives every report and can sign in to the portal.
+              </p>
             </Field>
           </Section>
 
@@ -615,20 +633,41 @@ export default function EditClientPage() {
             Portal access
           </h2>
           <p className="mb-4 text-xs text-slate-500">
-            Send a magic-link invite to <strong>{client.owner_email || "(no email set)"}</strong>.
-            First click on the link creates their portal account; subsequent
-            sign-ins use the standard magic-link flow at /login.
+            Each owner gets their own magic-link invite. First click on the
+            link creates the portal account; subsequent sign-ins use the
+            standard magic-link flow at /login. To invite a new person, add
+            their address to <strong>Owner emails</strong> above and save first.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={onSendInvite}
-              disabled={inviting || !client.owner_email}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {inviting ? "Sending…" : "Send portal invite"}
-            </button>
-          </div>
+          {(() => {
+            const owners = parseOwnerEmails(client.owner_emails);
+            if (owners.length === 0) {
+              return (
+                <p className="text-sm text-slate-500 italic">
+                  No owner emails configured. Add at least one address above and save.
+                </p>
+              );
+            }
+            return (
+              <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+                {owners.map((email) => (
+                  <li
+                    key={email}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <span className="truncate text-sm text-slate-800">{email}</span>
+                    <button
+                      type="button"
+                      onClick={() => onSendInvite(email)}
+                      disabled={inviting}
+                      className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {inviting ? "Sending…" : "Send invite"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
           {inviteMsg && (
             <div
               className={`mt-4 rounded-md p-3 text-sm ${

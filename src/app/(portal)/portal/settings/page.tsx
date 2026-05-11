@@ -17,9 +17,9 @@ export default function PortalSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Editable form state (just owner_email for now — CC recipients are a
-  // PR 5b follow-up, no backend column for them yet).
-  const [ownerEmail, setOwnerEmail] = useState("");
+  // Editable form state: the multi-owner emails list (semicolon-separated).
+  // Each address gets every report AND can sign in to the portal.
+  const [ownerEmails, setOwnerEmails] = useState("");
   const [saveMsg, setSaveMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -33,7 +33,7 @@ export default function PortalSettingsPage() {
       .then((list) => {
         const me = list[0] ?? null;
         setClient(me);
-        if (me) setOwnerEmail(me.owner_email ?? "");
+        if (me) setOwnerEmails(me.owner_emails ?? "");
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
@@ -43,8 +43,8 @@ export default function PortalSettingsPage() {
     e.preventDefault();
     if (!client) return;
     const patch: ClientUpdate = {};
-    if ((ownerEmail || null) !== client.owner_email) {
-      patch.owner_email = ownerEmail || null;
+    if ((ownerEmails || null) !== client.owner_emails) {
+      patch.owner_emails = ownerEmails || null;
     }
     if (Object.keys(patch).length === 0) {
       setSaveMsg({ kind: "ok", text: "No changes to save." });
@@ -154,18 +154,19 @@ export default function PortalSettingsPage() {
           </h2>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">
-              Primary recipient email
+              Recipient emails
             </span>
             <input
-              type="email"
-              required
-              value={ownerEmail}
-              onChange={(e) => setOwnerEmail(e.target.value)}
+              type="text"
+              value={ownerEmails}
+              onChange={(e) => setOwnerEmails(e.target.value)}
+              placeholder="One or more, semicolon-separated"
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
             />
             <span className="mt-1 block text-xs text-slate-500">
-              We send your weekly Monday reports to this address. Changing it
-              takes effect on the next Monday run.
+              We send your weekly Monday reports to every address listed here.
+              Each one can also sign in to this portal. Changes take effect on
+              the next Monday run.
             </span>
           </label>
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">

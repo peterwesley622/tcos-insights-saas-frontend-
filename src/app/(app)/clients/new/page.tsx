@@ -12,7 +12,7 @@ export default function NewClientPage() {
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerEmails, setOwnerEmails] = useState("");
   const [simproUrl, setSimproUrl] = useState("");
   const [simproKey, setSimproKey] = useState("");
   const [companyId, setCompanyId] = useState<number | null>(null);
@@ -57,7 +57,7 @@ export default function NewClientPage() {
       const created = await api.createClient({
         business_name: businessName.trim(),
         owner_name: ownerName.trim() || undefined,
-        owner_email: ownerEmail.trim() || undefined,
+        owner_emails: ownerEmails.trim() || undefined,
         simpro_base_url: simproUrl.trim(),
         simpro_api_key: simproKey.trim(),
         simpro_company_id: companyId,
@@ -110,12 +110,12 @@ export default function NewClientPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Owner email (optional)">
+            <Field label="Owner emails (optional)">
               <input
-                type="email"
-                value={ownerEmail}
-                onChange={(e) => setOwnerEmail(e.target.value)}
-                placeholder="Where weekly reports go"
+                type="text"
+                value={ownerEmails}
+                onChange={(e) => setOwnerEmails(e.target.value)}
+                placeholder="One or more, semicolon-separated. Each address gets every report and can sign in to the portal."
                 className={inputCls}
               />
             </Field>
