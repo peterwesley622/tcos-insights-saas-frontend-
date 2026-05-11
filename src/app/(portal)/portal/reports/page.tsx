@@ -174,7 +174,17 @@ export default function PortalReportsPage() {
             const state = genState[kind];
             const latest = latestByType[REPORT_TYPE_BY_KIND[kind]];
             const generating = state.status === "generating";
+            // Each card's "missing dependency" gate. Scorecard needs Xero;
+            // simpro + quotes_jobs need Simpro creds. The label tells the
+            // client exactly what's missing.
+            const simproConfigured = Boolean(client.simpro_api_key_masked);
             const xeroDisabled = kind === "scorecard" && !client.xero_connected;
+            const simproDisabled =
+              (kind === "simpro" || kind === "quotes_jobs") && !simproConfigured;
+            const disabled = xeroDisabled || simproDisabled;
+            const disabledReason = xeroDisabled
+              ? "Connect Xero in Settings to enable"
+              : "Simpro not configured for your account";
             return (
               <section
                 key={kind}
@@ -184,9 +194,9 @@ export default function PortalReportsPage() {
                   <h2 className="text-lg font-semibold text-slate-900">
                     {meta.title}
                   </h2>
-                  {xeroDisabled && (
+                  {disabled && (
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                      Connect Xero in Settings to enable
+                      {disabledReason}
                     </span>
                   )}
                 </div>
@@ -200,7 +210,7 @@ export default function PortalReportsPage() {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => onPreview(kind)}
-                    disabled={generating || xeroDisabled}
+                    disabled={generating || disabled}
                     className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     {generating ? "Generating…" : "Preview latest"}

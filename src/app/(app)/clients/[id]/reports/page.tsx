@@ -169,14 +169,26 @@ export default function ReportsPage() {
             const meta = REPORT_META[kind];
             const state = genState[kind];
             const generating = state.status === "generating";
-            const disabled = kind === "scorecard" && !client.xero_connected;
+            // Each card has its own "missing dependency" gate. The label
+            // tells the admin exactly which integration is unconfigured
+            // so the disabled state isn't mysterious.
+            const simproConfigured = Boolean(client.simpro_api_key_masked);
+            const xeroConfigured = Boolean(client.xero_connected);
+            const disabled =
+              (kind === "scorecard" && !xeroConfigured) ||
+              (kind === "simpro" && !simproConfigured) ||
+              (kind === "quotes_jobs" && !simproConfigured);
+            const disabledReason =
+              kind === "scorecard"
+                ? "Xero not connected"
+                : "Simpro not configured";
             return (
               <section key={kind} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-1 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">{meta.title}</h2>
                   {disabled && (
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                      Xero not connected
+                      {disabledReason}
                     </span>
                   )}
                 </div>

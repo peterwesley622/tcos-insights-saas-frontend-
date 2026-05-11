@@ -50,7 +50,12 @@ export default function NewClientPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (companyId == null) return;
+    // Simpro is optional. If the user filled in any Simpro fields they
+    // must also have detected a company (so we know which one to use);
+    // otherwise simpro_company_id stays at the backend default of 0 and
+    // the client is created as Xero-only.
+    const wantsSimpro = simproUrl.trim().length > 0 || simproKey.trim().length > 0;
+    if (wantsSimpro && companyId == null) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -58,9 +63,9 @@ export default function NewClientPage() {
         business_name: businessName.trim(),
         owner_name: ownerName.trim() || undefined,
         owner_emails: ownerEmails.trim() || undefined,
-        simpro_base_url: simproUrl.trim(),
-        simpro_api_key: simproKey.trim(),
-        simpro_company_id: companyId,
+        simpro_base_url: simproUrl.trim() || undefined,
+        simpro_api_key: simproKey.trim() || undefined,
+        simpro_company_id: companyId ?? 0,
         gp_threshold_low: gpLow,
         gp_threshold_high: gpHigh,
         num_site_workers: siteWorkers,
@@ -73,12 +78,13 @@ export default function NewClientPage() {
     }
   }
 
+  // Submit gate: business name is the only hard requirement. When the
+  // admin starts filling Simpro fields, the detect-companies step
+  // becomes required so we know which company ID to save.
+  const wantsSimpro = simproUrl.trim().length > 0 || simproKey.trim().length > 0;
   const canSubmit =
     businessName.trim().length > 0 &&
-    simproUrl.trim().length > 0 &&
-    simproKey.trim().length > 0 &&
-    companyId != null &&
-    detectResult?.status !== "error";
+    (!wantsSimpro || (companyId != null && detectResult?.status !== "error"));
 
   return (
     <main className="min-h-screen bg-slate-50 p-8">
@@ -121,11 +127,16 @@ export default function NewClientPage() {
             </Field>
           </Section>
 
-          <Section title="Simpro connection">
-            <Field label="Simpro base URL" required>
+          <Section title="Simpro connection (optional)">
+            <p className="text-xs text-slate-500">
+              Leave both fields blank for Xero-only clients — they&apos;ll get
+              the financial scorecard report only, with no labour or quote
+              follow-up emails. To enable those, paste your Simpro URL and
+              API key, then click <strong>Detect companies</strong>.
+            </p>
+            <Field label="Simpro base URL">
               <input
                 type="url"
-                required
                 value={simproUrl}
                 onChange={(e) => {
                   setSimproUrl(e.target.value);
@@ -136,10 +147,9 @@ export default function NewClientPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Simpro API key" required>
+            <Field label="Simpro API key">
               <input
                 type="password"
-                required
                 value={simproKey}
                 onChange={(e) => {
                   setSimproKey(e.target.value);

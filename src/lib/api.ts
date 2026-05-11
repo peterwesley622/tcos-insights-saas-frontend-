@@ -30,8 +30,11 @@ export type ClientCreate = {
   business_name: string;
   owner_name?: string | null;
   owner_emails?: string | null;
-  simpro_base_url: string;
-  simpro_api_key: string;
+  // Simpro is optional — leave both blank for Xero-only clients. The
+  // backend's scheduler will skip the Simpro labour + Quote Follow-up
+  // reports for them automatically.
+  simpro_base_url?: string | null;
+  simpro_api_key?: string | null;
   simpro_company_id?: number;
   num_site_workers?: number | null;
   gp_threshold_low?: number | null;
