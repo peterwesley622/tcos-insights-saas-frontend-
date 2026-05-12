@@ -44,6 +44,32 @@ export default function HistoryPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [viewingId, setViewingId] = useState<number | null>(null);
+
+  // Fetch the stored HTML for a single log and open it in a new tab.
+  // We can't just link to the endpoint directly because it requires a
+  // bearer token in the Authorization header — so we pull the HTML
+  // through the typed API client, wrap it in a Blob, and window.open
+  // the resulting blob: URL.
+  async function viewReport(logId: number) {
+    setViewingId(logId);
+    try {
+      const html = await api.getReportLogHtml(clientId, logId);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) {
+        setError("Couldn't open a new tab — check your browser's popup blocker.");
+      }
+      // Revoke the URL after a delay so the new tab has time to load
+      // its content. Keeping it around forever would leak memory.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setViewingId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -148,6 +174,8 @@ export default function HistoryPage() {
                 const hasError = !!log.error_message;
                 const isExpanded = expanded.has(log.id);
                 const hasArchive = !!log.archive_url;
+                const canView = log.has_html;
+                const isViewing = viewingId === log.id;
                 return (
                   <Fragment key={log.id}>
                     <tr className="hover:bg-slate-50">
@@ -163,14 +191,24 @@ export default function HistoryPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right space-x-4">
+                        {canView && (
+                          <button
+                            onClick={() => viewReport(log.id)}
+                            disabled={isViewing}
+                            className="text-sm font-medium text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                          >
+                            {isViewing ? "Opening…" : "View"}
+                          </button>
+                        )}
                         {hasArchive && (
                           <a
                             href={log.archive_url!}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-blue-700 hover:text-blue-900"
+                            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                            title="Open the archived copy in Google Drive"
                           >
-                            Open ↗
+                            Drive ↗
                           </a>
                         )}
                         {hasError && (

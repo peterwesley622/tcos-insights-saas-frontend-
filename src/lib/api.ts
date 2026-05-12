@@ -112,6 +112,10 @@ export type ReportLog = {
   // failed archives, or non-success statuses. UI renders an "Open" link
   // only when this is truthy.
   archive_url: string | null;
+  // True when the backend has the rendered HTML stored alongside this
+  // log row (every successful send after 2026-05-13). The UI uses this
+  // to decide whether to render the "View" button.
+  has_html: boolean;
 };
 
 export type ReportSendResult = {
@@ -263,6 +267,13 @@ export function buildApi(getAccessToken: GetAccessToken) {
       request<ReportLog[]>(`/api/scheduler/status?limit=${limit}`),
     listReportLogs: (clientId: number, limit: number = 50) =>
       request<ReportLog[]>(`/api/clients/${clientId}/report-logs?limit=${limit}`),
+    /**
+     * Fetch the rendered HTML for a single previously-sent report. Used
+     * by the history "View" button — the caller wraps the response in a
+     * Blob and `window.open`s it in a new tab.
+     */
+    getReportLogHtml: (clientId: number, logId: number) =>
+      requestText(`/api/clients/${clientId}/report-logs/${logId}/html`),
 
     generateSimproReportHtml: (clientId: number) =>
       requestText(`/api/reports/generate?format=html`, {

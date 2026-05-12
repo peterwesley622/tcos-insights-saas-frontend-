@@ -79,6 +79,26 @@ export default function PortalReportsPage() {
     quotes_jobs: { status: "idle" },
   });
 
+  const [viewingId, setViewingId] = useState<number | null>(null);
+
+  // Pull the stored HTML for a single history row and open in a new
+  // tab via a Blob URL. The endpoint requires the bearer token so we
+  // can't link to it directly.
+  async function viewReport(clientId: number, logId: number) {
+    setViewingId(logId);
+    try {
+      const html = await api.getReportLogHtml(clientId, logId);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setViewingId(null);
+    }
+  }
+
   const load = useCallback(async () => {
     try {
       const list = await api.listClients();
@@ -279,15 +299,25 @@ export default function PortalReportsPage() {
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right space-x-4">
+                      {log.has_html && (
+                        <button
+                          onClick={() => viewReport(log.client_id, log.id)}
+                          disabled={viewingId === log.id}
+                          className="text-sm font-medium text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                        >
+                          {viewingId === log.id ? "Opening…" : "View"}
+                        </button>
+                      )}
                       {log.archive_url && (
                         <a
                           href={log.archive_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-blue-700 hover:text-blue-900"
+                          className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                          title="Open the archived copy in Google Drive"
                         >
-                          Open ↗
+                          Drive ↗
                         </a>
                       )}
                     </td>
