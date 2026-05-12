@@ -55,7 +55,11 @@ export default function HistoryPage() {
     setViewingId(logId);
     try {
       const html = await api.getReportLogHtml(clientId, logId);
-      const blob = new Blob([html], { type: "text/html" });
+      // Charset must be on the Blob's mime type — the HTML itself has
+      // no <meta charset> tag (it's an email-format body), and without
+      // a hint the browser defaults to Latin-1 and mojibakes the
+      // UTF-8 em dash into "â€".
+      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const w = window.open(url, "_blank");
       if (!w) {

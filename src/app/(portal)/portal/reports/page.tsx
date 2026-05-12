@@ -88,7 +88,9 @@ export default function PortalReportsPage() {
     setViewingId(logId);
     try {
       const html = await api.getReportLogHtml(clientId, logId);
-      const blob = new Blob([html], { type: "text/html" });
+      // Set charset explicitly so the new tab decodes UTF-8 instead of
+      // defaulting to Latin-1 (which mojibakes the em dash to "â€").
+      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
