@@ -275,6 +275,27 @@ export function buildApi(getAccessToken: GetAccessToken) {
     getReportLogHtml: (clientId: number, logId: number) =>
       requestText(`/api/clients/${clientId}/report-logs/${logId}/html`),
 
+    /**
+     * Fetch a freshly-rendered PDF of a report. Returns the raw bytes
+     * as a Blob; callers turn it into a download link via
+     * URL.createObjectURL.
+     */
+    downloadReportPdf: async (
+      clientId: number,
+      kind: "simpro" | "scorecard" | "quotes",
+    ): Promise<Blob> => {
+      const path = `/api/clients/${clientId}/reports/${kind}/pdf`;
+      const res = await fetch(`${getApiBaseUrl()}${path}`, {
+        headers: await buildHeaders(),
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`API ${res.status} ${res.statusText}: ${body}`);
+      }
+      return res.blob();
+    },
+
     generateSimproReportHtml: (clientId: number) =>
       requestText(`/api/reports/generate?format=html`, {
         method: "POST",
@@ -299,11 +320,12 @@ export function buildApi(getAccessToken: GetAccessToken) {
       }),
     sendSimproReport: (
       clientId: number,
-      opts: { test_email?: string; dry_run?: boolean } = {},
+      opts: { test_email?: string; dry_run?: boolean; as_pdf?: boolean } = {},
     ) => {
       const qs = new URLSearchParams();
       if (opts.test_email) qs.set("test_email", opts.test_email);
       if (opts.dry_run) qs.set("dry_run", "true");
+      if (opts.as_pdf) qs.set("as_pdf", "true");
       const tail = qs.toString() ? `?${qs.toString()}` : "";
       return request<ReportSendResult>(
         `/api/clients/${clientId}/reports/send${tail}`,
@@ -312,11 +334,12 @@ export function buildApi(getAccessToken: GetAccessToken) {
     },
     sendScorecardReport: (
       clientId: number,
-      opts: { test_email?: string; dry_run?: boolean } = {},
+      opts: { test_email?: string; dry_run?: boolean; as_pdf?: boolean } = {},
     ) => {
       const qs = new URLSearchParams();
       if (opts.test_email) qs.set("test_email", opts.test_email);
       if (opts.dry_run) qs.set("dry_run", "true");
+      if (opts.as_pdf) qs.set("as_pdf", "true");
       const tail = qs.toString() ? `?${qs.toString()}` : "";
       return request<ReportSendResult>(
         `/api/clients/${clientId}/reports/scorecard/send${tail}`,
@@ -325,11 +348,12 @@ export function buildApi(getAccessToken: GetAccessToken) {
     },
     sendQuotesJobsReport: (
       clientId: number,
-      opts: { test_email?: string; dry_run?: boolean } = {},
+      opts: { test_email?: string; dry_run?: boolean; as_pdf?: boolean } = {},
     ) => {
       const qs = new URLSearchParams();
       if (opts.test_email) qs.set("test_email", opts.test_email);
       if (opts.dry_run) qs.set("dry_run", "true");
+      if (opts.as_pdf) qs.set("as_pdf", "true");
       const tail = qs.toString() ? `?${qs.toString()}` : "";
       return request<ReportSendResult>(
         `/api/clients/${clientId}/reports/quotes/send${tail}`,

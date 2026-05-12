@@ -50,8 +50,10 @@ export default function ReportsPage() {
   const [sendModal, setSendModal] = useState<ReportKind | null>(null);
   const [testEmail, setTestEmail] = useState("");
   const [dryRun, setDryRun] = useState(false);
+  const [asPdf, setAsPdf] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<ReportSendResult | null>(null);
+  const [downloading, setDownloading] = useState<ReportKind | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
@@ -73,7 +75,9 @@ export default function ReportsPage() {
       } else {
         html = await api.generateQuotesJobsHtml(clientId);
       }
-      const blob = new Blob([html], { type: "text/html" });
+      // charset=utf-8 on the blob so the new tab decodes UTF-8 even
+      // before the HTML's own <meta charset> has been parsed.
+      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank", "noopener");
       setGenState((s) => ({ ...s, [kind]: { status: "ok", message: "Opened in a new tab." } }));
@@ -89,7 +93,44 @@ export default function ReportsPage() {
     setSendModal(kind);
     setTestEmail("");
     setDryRun(false);
+    setAsPdf(false);
     setSendResult(null);
+  }
+
+  // Download a freshly-rendered PDF of the chosen report. We trigger a
+  // download via a temporary <a download="..."> rather than just
+  // window.open-ing the blob - that way the browser saves the file with
+  // the filename the user expects, instead of a generic "download.pdf".
+  async function onDownloadPdf(kind: ReportKind) {
+    if (!client) return;
+    setDownloading(kind);
+    try {
+      const apiKind = kind === "quotes_jobs" ? "quotes" : kind;
+      const blob = await api.downloadReportPdf(clientId, apiKind);
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().slice(0, 10);
+      const label =
+        kind === "simpro"
+          ? "Labour & Productivity"
+          : kind === "scorecard"
+          ? "Financial Scorecard"
+          : "Quote Follow-Up & Job Health";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${client.business_name} - ${label} - ${today}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setGenState((s) => ({ ...s, [kind]: { status: "ok", message: "PDF downloaded." } }));
+    } catch (e) {
+      setGenState((s) => ({
+        ...s,
+        [kind]: { status: "err", message: e instanceof Error ? e.message : String(e) },
+      }));
+    } finally {
+      setDownloading(null);
+    }
   }
 
   function closeSendModal() {
@@ -105,6 +146,7 @@ export default function ReportsPage() {
       const opts = {
         test_email: testEmail.trim() || undefined,
         dry_run: dryRun,
+        as_pdf: asPdf,
       };
       let result: ReportSendResult;
       if (sendModal === "simpro") {
@@ -204,6 +246,13 @@ export default function ReportsPage() {
                     {generating ? "Generating…" : "Preview"}
                   </button>
                   <button
+                    onClick={() => onDownloadPdf(kind)}
+                    disabled={downloading === kind || disabled}
+                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {downloading === kind ? "Generating PDF…" : "Download PDF"}
+                  </button>
+                  <button
                     onClick={() => openSendModal(kind)}
                     disabled={generating || disabled}
                     className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
@@ -242,6 +291,8 @@ export default function ReportsPage() {
           setTestEmail={setTestEmail}
           dryRun={dryRun}
           setDryRun={setDryRun}
+          asPdf={asPdf}
+          setAsPdf={setAsPdf}
           sending={sending}
           result={sendResult}
           onClose={closeSendModal}
@@ -259,6 +310,8 @@ function SendModal({
   setTestEmail,
   dryRun,
   setDryRun,
+  asPdf,
+  setAsPdf,
   sending,
   result,
   onClose,
@@ -270,6 +323,8 @@ function SendModal({
   setTestEmail: (v: string) => void;
   dryRun: boolean;
   setDryRun: (v: boolean) => void;
+  asPdf: boolean;
+  setAsPdf: (v: boolean) => void;
   sending: boolean;
   result: ReportSendResult | null;
   onClose: () => void;
@@ -315,6 +370,22 @@ function SendModal({
               <span className="block font-medium text-slate-700">Dry run</span>
               <span className="text-xs text-slate-500">
                 Builds the report but does NOT send the email. Use to test.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={asPdf}
+              onChange={(e) => setAsPdf(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block font-medium text-slate-700">Send as PDF</span>
+              <span className="text-xs text-slate-500">
+                Email a short note with the report attached as a PDF, instead
+                of the full HTML in the body.
               </span>
             </span>
           </label>

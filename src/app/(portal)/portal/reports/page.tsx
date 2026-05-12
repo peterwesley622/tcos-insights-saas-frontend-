@@ -80,6 +80,37 @@ export default function PortalReportsPage() {
   });
 
   const [viewingId, setViewingId] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState<ReportKind | null>(null);
+
+  // Same trigger-a-download pattern as the admin page - fetch the PDF
+  // through the API client (auth header), wrap as Blob, click a temp <a>.
+  async function onDownloadPdf(kind: ReportKind) {
+    if (!client) return;
+    setDownloading(kind);
+    try {
+      const apiKind = kind === "quotes_jobs" ? "quotes" : kind;
+      const blob = await api.downloadReportPdf(client.id, apiKind);
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().slice(0, 10);
+      const label =
+        kind === "simpro"
+          ? "Labour & Productivity"
+          : kind === "scorecard"
+          ? "Financial Scorecard"
+          : "Quote Follow-Up & Job Health";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${client.business_name} - ${label} - ${today}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   // Pull the stored HTML for a single history row and open in a new
   // tab via a Blob URL. The endpoint requires the bearer token so we
@@ -140,7 +171,8 @@ export default function PortalReportsPage() {
       } else {
         html = await api.generateQuotesJobsHtml(client.id);
       }
-      const blob = new Blob([html], { type: "text/html" });
+      // charset=utf-8 so the new tab decodes UTF-8 immediately.
+      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank", "noopener");
       setGenState((s) => ({
@@ -236,6 +268,13 @@ export default function PortalReportsPage() {
                     className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     {generating ? "Generating…" : "Preview latest"}
+                  </button>
+                  <button
+                    onClick={() => onDownloadPdf(kind)}
+                    disabled={downloading === kind || disabled}
+                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {downloading === kind ? "Generating PDF…" : "Download PDF"}
                   </button>
                 </div>
 
