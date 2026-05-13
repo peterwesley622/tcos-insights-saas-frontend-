@@ -12,10 +12,10 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
 
 function statusClass(status: string) {
   const s = status.toLowerCase();
-  if (s === "success" || s === "sent") return "bg-green-100 text-green-800";
-  if (s === "dry_run") return "bg-blue-100 text-blue-800";
-  if (s === "skipped") return "bg-slate-100 text-slate-700";
-  return "bg-red-100 text-red-800";
+  if (s === "success" || s === "sent") return "bg-brand-green/15 text-brand-green";
+  if (s === "dry_run") return "bg-accent-soft text-accent-deep";
+  if (s === "skipped") return "bg-paper-cool text-ink-soft";
+  return "bg-brand-red/15 text-brand-red";
 }
 
 function fmtDate(iso: string | null) {
@@ -84,17 +84,17 @@ export default async function SystemStatusPage() {
     : null;
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">System status</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-ink">System status</h1>
+          <p className="text-sm text-muted">
             Recent report runs across all clients. The Monday cron writes here too.
           </p>
         </div>
 
         {errors.length > 0 && (
-          <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mb-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             <strong>Backend errors:</strong>
             <ul className="mt-1 list-disc pl-5">
               {errors.map((e, i) => (
@@ -120,14 +120,14 @@ export default async function SystemStatusPage() {
           />
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-4 py-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-lg border border-rule bg-white shadow-sm">
+          <div className="border-b border-rule px-4 py-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Last {logs.length} run{logs.length === 1 ? "" : "s"}
             </h2>
           </div>
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table className="min-w-full divide-y divide-rule text-sm">
+            <thead className="bg-paper-warm text-left text-xs font-semibold uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Client</th>
@@ -136,10 +136,10 @@ export default async function SystemStatusPage() {
                 <th className="px-4 py-3">Error</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-paper-cool">
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
                     No runs yet.
                   </td>
                 </tr>
@@ -147,24 +147,24 @@ export default async function SystemStatusPage() {
               {logs.map((log) => {
                 const client = clientById.get(log.client_id);
                 return (
-                  <tr key={log.id} className="hover:bg-slate-50 align-top">
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-paper-warm align-top">
+                    <td className="px-4 py-3 text-ink-soft whitespace-nowrap">
                       <div>{fmtRelative(log.sent_at)}</div>
-                      <div className="text-xs text-slate-400">{fmtDate(log.sent_at)}</div>
+                      <div className="text-xs text-muted">{fmtDate(log.sent_at)}</div>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-ink-soft">
                       {client ? (
                         <Link
                           href={`/clients/${client.id}`}
-                          className="font-medium text-slate-900 hover:text-slate-700"
+                          className="font-medium text-ink hover:text-ink-soft"
                         >
                           {client.business_name}
                         </Link>
                       ) : (
-                        <span className="text-slate-400">deleted (id {log.client_id})</span>
+                        <span className="text-muted">deleted (id {log.client_id})</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-ink-soft">
                       {REPORT_TYPE_LABELS[log.report_type] ?? log.report_type}
                     </td>
                     <td className="px-4 py-3">
@@ -174,7 +174,7 @@ export default async function SystemStatusPage() {
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-red-700 max-w-md break-words">
+                    <td className="px-4 py-3 text-xs text-brand-red max-w-md break-words">
                       {log.error_message ? (
                         <span className="font-mono">{log.error_message}</span>
                       ) : (
@@ -204,15 +204,15 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className={`rounded-lg border p-4 ${warn ? "border-red-200 bg-red-50" : "border-slate-200 bg-white"}`}>
-      <div className={`text-xs font-medium uppercase tracking-wide ${warn ? "text-red-700" : "text-slate-500"}`}>
+    <div className={`rounded-lg border p-4 ${warn ? "border-red-200 bg-brand-red/10" : "border-rule bg-white"}`}>
+      <div className={`text-xs font-medium uppercase tracking-wide ${warn ? "text-brand-red" : "text-muted"}`}>
         {label}
       </div>
-      <div className={`mt-1 text-2xl font-bold ${warn ? "text-red-900" : "text-slate-900"}`}>
+      <div className={`mt-1 text-2xl font-bold ${warn ? "text-brand-red" : "text-ink"}`}>
         {value}
       </div>
       {sub && (
-        <div className={`mt-0.5 text-xs ${warn ? "text-red-700" : "text-slate-500"}`}>
+        <div className={`mt-0.5 text-xs ${warn ? "text-brand-red" : "text-muted"}`}>
           {sub}
         </div>
       )}

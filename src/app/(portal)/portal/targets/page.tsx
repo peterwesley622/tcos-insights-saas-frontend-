@@ -135,17 +135,17 @@ export default function PortalTargetsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
+      <main className="min-h-screen bg-paper-warm p-8">
         <div className="mx-auto max-w-3xl">
-          <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mt-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             {error ?? "Couldn't load your client record."}
           </div>
         </div>
@@ -154,11 +154,11 @@ export default function PortalTargetsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Your monthly targets</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-ink">Your monthly targets</h1>
+          <p className="text-sm text-muted">
             Set one standing monthly target. Your weekly scorecard report
             compares every month's actuals to it and colour-codes each
             metric green / amber / red.
@@ -168,7 +168,7 @@ export default function PortalTargetsPage() {
         {msg && (
           <div
             className={`mb-4 rounded-md p-3 text-sm ${
-              msg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+              msg.kind === "ok" ? "bg-brand-green/10 text-brand-green" : "bg-brand-red/10 text-brand-red"
             }`}
           >
             {msg.text}
@@ -176,15 +176,15 @@ export default function PortalTargetsPage() {
         )}
 
         {/* Current standing target */}
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-rule bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Current monthly target
             </h2>
             {!editing && (
               <button
                 onClick={startEdit}
-                className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-700"
+                className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-deep"
               >
                 {standing ? "Update target" : "Set target"}
               </button>
@@ -192,7 +192,7 @@ export default function PortalTargetsPage() {
           </div>
 
           {!editing && !standing && (
-            <p className="text-sm text-slate-500 italic">
+            <p className="text-sm text-muted italic">
               No standing target set yet. Click <strong>Set target</strong> to
               create one — your scorecard report can't run without it.
             </p>
@@ -202,15 +202,15 @@ export default function PortalTargetsPage() {
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4">
               {NUMERIC_FIELDS.map((field) => (
                 <div key={field}>
-                  <dt className="text-xs uppercase tracking-wide text-slate-500">
+                  <dt className="text-xs uppercase tracking-wide text-muted">
                     {FIELD_LABELS[field]}
                   </dt>
-                  <dd className="mt-0.5 font-medium text-slate-900">
+                  <dd className="mt-0.5 font-medium text-ink">
                     {fmtMoney(standing[field])}
                   </dd>
                 </div>
               ))}
-              <div className="col-span-2 md:col-span-4 mt-1 text-xs text-slate-500">
+              <div className="col-span-2 md:col-span-4 mt-1 text-xs text-muted">
                 Active since {standing.period_start}.
               </div>
             </dl>
@@ -218,7 +218,7 @@ export default function PortalTargetsPage() {
 
           {editing && (
             <form onSubmit={onSubmit} className="space-y-6">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 Saving these numbers closes your previous target and starts
                 a new one today. Past targets stay in History for reference.
               </p>
@@ -237,18 +237,18 @@ export default function PortalTargetsPage() {
                   </Field>
                 ))}
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+              <div className="flex items-center justify-end gap-3 border-t border-rule pt-6">
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                  className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
                 >
                   {saving ? "Saving…" : "Save target"}
                 </button>
@@ -259,17 +259,17 @@ export default function PortalTargetsPage() {
 
         {/* History */}
         {history.length > 0 && (
-          <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-4 py-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <div className="mt-6 overflow-hidden rounded-lg border border-rule bg-white shadow-sm">
+            <div className="border-b border-rule px-4 py-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
                 History
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-muted">
                 Previous targets, closed when a newer one replaced them.
               </p>
             </div>
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <table className="min-w-full divide-y divide-rule text-sm">
+              <thead className="bg-paper-warm text-left text-xs font-semibold uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-2">Period</th>
                   <th className="px-4 py-2 text-right">Revenue</th>
@@ -277,13 +277,13 @@ export default function PortalTargetsPage() {
                   <th className="px-4 py-2 text-right">Net profit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-paper-cool">
                 {history.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{fmtPeriod(t)}</td>
-                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.revenue)}</td>
-                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.gross_profit)}</td>
-                    <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(t.net_profit)}</td>
+                  <tr key={t.id} className="hover:bg-paper-warm">
+                    <td className="px-4 py-3 font-medium text-ink">{fmtPeriod(t)}</td>
+                    <td className="px-4 py-3 text-right text-ink-soft">{fmtMoney(t.revenue)}</td>
+                    <td className="px-4 py-3 text-right text-ink-soft">{fmtMoney(t.gross_profit)}</td>
+                    <td className="px-4 py-3 text-right text-ink-soft">{fmtMoney(t.net_profit)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -296,7 +296,7 @@ export default function PortalTargetsPage() {
 }
 
 const inputCls =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none";
+  "w-full rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none";
 
 function Field({
   label,
@@ -307,7 +307,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-ink-soft">{label}</span>
       {children}
     </label>
   );

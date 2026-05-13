@@ -338,20 +338,20 @@ export default function EditClientPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
+      <main className="min-h-screen bg-paper-warm p-8">
         <div className="mx-auto max-w-2xl">
-          <Link href="/clients" className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href="/clients" className="text-sm text-ink-soft hover:text-ink">
             ← Back to clients
           </Link>
-          <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mt-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             {error ?? "Client not found."}
           </div>
         </div>
@@ -360,41 +360,41 @@ export default function EditClientPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{client.business_name}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-ink">{client.business_name}</h1>
+            <p className="text-sm text-muted">
               ID {client.id} · {client.active ? "Active" : "Inactive"}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Link
               href={`/clients/${client.id}/reports`}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-rule bg-white px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper-warm"
             >
               Reports →
             </Link>
             <Link
               href={`/clients/${client.id}/targets`}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-rule bg-white px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper-warm"
             >
               Targets →
             </Link>
             <Link
               href={`/clients/${client.id}/history`}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-rule bg-white px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper-warm"
             >
               History →
             </Link>
-            <Link href="/clients" className="text-sm text-slate-600 hover:text-slate-900">
+            <Link href="/clients" className="text-sm text-ink-soft hover:text-ink">
               ← Back to clients
             </Link>
           </div>
         </div>
 
-        <form onSubmit={onSave} className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={onSave} className="space-y-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
           <Section title="Business">
             <Field label="Business name" required>
               <input
@@ -419,7 +419,7 @@ export default function EditClientPage() {
                 onChange={setOwnerEmailList}
                 inputClassName={inputCls}
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted">
                 Each address receives every report and can sign in to the
                 portal. Click <strong>Add another email</strong> to invite
                 more people; click the trash icon to remove one.
@@ -497,10 +497,10 @@ export default function EditClientPage() {
                 className="mt-0.5"
               />
               <span>
-                <span className="block text-sm font-medium text-slate-700">
+                <span className="block text-sm font-medium text-ink-soft">
                   Wages live in Operating Expenses (not Cost of Sales)
                 </span>
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-muted">
                   Tick this for clients (e.g. LS Fencing) whose Xero chart of accounts puts
                   wages, super and worker&apos;s comp in OpEx. The scorecard then moves those
                   amounts out of Overheads and into Wages so both totals are correct.
@@ -520,7 +520,7 @@ export default function EditClientPage() {
               />
             </Field>
             <fieldset>
-              <legend className="mb-1 block text-sm font-medium text-slate-700">Enabled reports</legend>
+              <legend className="mb-1 block text-sm font-medium text-ink-soft">Enabled reports</legend>
               <div className="flex gap-6">
                 {(
                   [
@@ -529,7 +529,7 @@ export default function EditClientPage() {
                     ["quotes", "Quote Follow-Up"],
                   ] as [keyof typeof enabledReports, string][]
                 ).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 text-sm text-slate-700">
+                  <label key={key} className="flex items-center gap-2 text-sm text-ink-soft">
                     <input
                       type="checkbox"
                       checked={enabledReports[key]}
@@ -553,11 +553,11 @@ export default function EditClientPage() {
             </Field>
           </Section>
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+          <div className="flex items-center justify-end gap-3 border-t border-rule pt-6">
             {saveMsg && (
               <span
                 className={`mr-auto text-sm ${
-                  saveMsg.kind === "ok" ? "text-green-700" : "text-red-700"
+                  saveMsg.kind === "ok" ? "text-brand-green" : "text-brand-red"
                 }`}
               >
                 {saveMsg.text}
@@ -566,15 +566,15 @@ export default function EditClientPage() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </form>
 
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <div className="mt-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
             Connections
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -582,7 +582,7 @@ export default function EditClientPage() {
               type="button"
               onClick={onTestSimpro}
               disabled={actioning}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
             >
               Test Simpro
             </button>
@@ -592,7 +592,7 @@ export default function EditClientPage() {
                   type="button"
                   onClick={onTestXero}
                   disabled={actioning}
-                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                 >
                   Test Xero
                 </button>
@@ -600,7 +600,7 @@ export default function EditClientPage() {
                   type="button"
                   onClick={onDisconnectXero}
                   disabled={actioning}
-                  className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  className="rounded-md border border-brand-red bg-white px-4 py-2 text-sm font-medium text-brand-red hover:bg-brand-red/10 disabled:opacity-50"
                 >
                   Disconnect Xero
                 </button>
@@ -610,7 +610,7 @@ export default function EditClientPage() {
                 type="button"
                 onClick={onConnectXero}
                 disabled={actioning}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
               >
                 Connect Xero
               </button>
@@ -620,7 +620,7 @@ export default function EditClientPage() {
               onClick={onTestDrive}
               disabled={actioning || !driveFolderId}
               title={!driveFolderId ? "Set a Google Drive folder ID first." : undefined}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
             >
               Test Drive
             </button>
@@ -628,7 +628,7 @@ export default function EditClientPage() {
           {connMsg && (
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
-                connMsg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+                connMsg.kind === "ok" ? "bg-brand-green/10 text-brand-green" : "bg-brand-red/10 text-brand-red"
               }`}
             >
               {connMsg.text}
@@ -636,11 +636,11 @@ export default function EditClientPage() {
           )}
         </div>
 
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <div className="mt-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted">
             Portal access
           </h2>
-          <p className="mb-4 text-xs text-slate-500">
+          <p className="mb-4 text-xs text-muted">
             Each owner gets their own magic-link invite. First click on the
             link creates the portal account; subsequent sign-ins use the
             standard magic-link flow at /login. To invite a new person, add
@@ -650,24 +650,24 @@ export default function EditClientPage() {
             const owners = parseOwnerEmails(client.owner_emails);
             if (owners.length === 0) {
               return (
-                <p className="text-sm text-slate-500 italic">
+                <p className="text-sm text-muted italic">
                   No owner emails configured. Add at least one address above and save.
                 </p>
               );
             }
             return (
-              <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+              <ul className="divide-y divide-paper-cool rounded-md border border-rule">
                 {owners.map((email) => (
                   <li
                     key={email}
                     className="flex items-center justify-between gap-3 px-4 py-3"
                   >
-                    <span className="truncate text-sm text-slate-800">{email}</span>
+                    <span className="truncate text-sm text-ink">{email}</span>
                     <button
                       type="button"
                       onClick={() => onSendInvite(email)}
                       disabled={inviting}
-                      className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
                     >
                       {inviting ? "Sending…" : "Send invite"}
                     </button>
@@ -680,10 +680,10 @@ export default function EditClientPage() {
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
                 inviteMsg.kind === "ok"
-                  ? "bg-green-50 text-green-800"
+                  ? "bg-brand-green/10 text-brand-green"
                   : inviteMsg.kind === "info"
-                  ? "bg-blue-50 text-blue-800"
-                  : "bg-red-50 text-red-800"
+                  ? "bg-accent-soft text-accent-deep"
+                  : "bg-brand-red/10 text-brand-red"
               }`}
             >
               {inviteMsg.text}
@@ -691,8 +691,8 @@ export default function EditClientPage() {
           )}
         </div>
 
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <div className="mt-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
             Status
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -700,7 +700,7 @@ export default function EditClientPage() {
               type="button"
               onClick={onToggleActive}
               disabled={actioning}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
             >
               {client.active ? "Deactivate" : "Reactivate"}
             </button>
@@ -708,7 +708,7 @@ export default function EditClientPage() {
               type="button"
               onClick={onDelete}
               disabled={actioning}
-              className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+              className="rounded-md border border-brand-red bg-white px-4 py-2 text-sm font-medium text-brand-red hover:bg-brand-red/10 disabled:opacity-50"
             >
               Soft-delete
             </button>
@@ -716,7 +716,7 @@ export default function EditClientPage() {
           {statusMsg && (
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
-                statusMsg.kind === "ok" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+                statusMsg.kind === "ok" ? "bg-brand-green/10 text-brand-green" : "bg-brand-red/10 text-brand-red"
               }`}
             >
               {statusMsg.text}
@@ -729,12 +729,12 @@ export default function EditClientPage() {
 }
 
 const inputCls =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none";
+  "w-full rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
         {title}
       </legend>
       {children}
@@ -753,8 +753,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-600">*</span>}
+      <span className="mb-1 block text-sm font-medium text-ink-soft">
+        {label} {required && <span className="text-brand-red">*</span>}
       </span>
       {children}
     </label>

@@ -170,20 +170,20 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
+      <main className="min-h-screen bg-paper-warm p-8">
         <div className="mx-auto max-w-3xl">
-          <Link href={`/clients/${clientId}`} className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href={`/clients/${clientId}`} className="text-sm text-ink-soft hover:text-ink">
             ← Back to client
           </Link>
-          <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mt-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             {error ?? "Client not found."}
           </div>
         </div>
@@ -192,16 +192,16 @@ export default function ReportsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Reports — {client.business_name}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-ink">Reports — {client.business_name}</h1>
+            <p className="text-sm text-muted">
               Generate on demand or send the same email the Monday cron sends.
             </p>
           </div>
-          <Link href={`/clients/${clientId}`} className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href={`/clients/${clientId}`} className="text-sm text-ink-soft hover:text-ink">
             ← Back to client
           </Link>
         </div>
@@ -225,44 +225,44 @@ export default function ReportsPage() {
                 ? "Xero not connected"
                 : "Simpro not configured";
             return (
-              <section key={kind} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+              <section key={kind} className="rounded-lg border border-rule bg-white p-6 shadow-sm">
                 <div className="mb-1 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-slate-900">{meta.title}</h2>
+                  <h2 className="text-lg font-semibold text-ink">{meta.title}</h2>
                   {disabled && (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                    <span className="rounded-full bg-brand-amber/10 px-3 py-1 text-xs font-medium text-brand-amber">
                       {disabledReason}
                     </span>
                   )}
                 </div>
-                <p className="mb-1 text-sm text-slate-600">{meta.subtitle}</p>
-                <p className="mb-4 text-xs text-slate-500">{meta.etaText}</p>
+                <p className="mb-1 text-sm text-ink-soft">{meta.subtitle}</p>
+                <p className="mb-4 text-xs text-muted">{meta.etaText}</p>
 
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => onPreview(kind)}
                     disabled={generating || disabled}
-                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                   >
                     {generating ? "Generating…" : "Preview"}
                   </button>
                   <button
                     onClick={() => onDownloadPdf(kind)}
                     disabled={downloading === kind || disabled}
-                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                   >
                     {downloading === kind ? "Generating PDF…" : "Download PDF"}
                   </button>
                   <button
                     onClick={() => openSendModal(kind)}
                     disabled={generating || disabled}
-                    className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+                    className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
                   >
                     Send via email…
                   </button>
                 </div>
 
                 {generating && (
-                  <p className="mt-3 text-sm text-slate-600">
+                  <p className="mt-3 text-sm text-ink-soft">
                     {kind === "simpro"
                       ? "Pulling jobs from Simpro and rendering charts. This usually takes 2–3 minutes — please don't close this tab."
                       : kind === "scorecard"
@@ -272,10 +272,10 @@ export default function ReportsPage() {
                 )}
 
                 {state.status === "ok" && state.message && (
-                  <p className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-800">{state.message}</p>
+                  <p className="mt-3 rounded-md bg-brand-green/10 p-3 text-sm text-brand-green">{state.message}</p>
                 )}
                 {state.status === "err" && state.message && (
-                  <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800">{state.message}</p>
+                  <p className="mt-3 rounded-md bg-brand-red/10 p-3 text-sm text-brand-red">{state.message}</p>
                 )}
               </section>
             );
@@ -334,20 +334,20 @@ function SendModal({
   const effectiveRecipient = testEmail.trim() || recipientEmail || "(missing)";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
       <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
-        <div className="border-b border-slate-200 px-6 py-4">
-          <h3 className="text-lg font-semibold text-slate-900">Send {meta.title}</h3>
+        <div className="border-b border-rule px-6 py-4">
+          <h3 className="text-lg font-semibold text-ink">Send {meta.title}</h3>
         </div>
 
         <div className="space-y-4 px-6 py-5 text-sm">
           <div>
-            <span className="block font-medium text-slate-700">Recipient</span>
-            <span className="text-slate-600">{effectiveRecipient}</span>
+            <span className="block font-medium text-ink-soft">Recipient</span>
+            <span className="text-ink-soft">{effectiveRecipient}</span>
           </div>
 
           <label className="block">
-            <span className="mb-1 block font-medium text-slate-700">
+            <span className="mb-1 block font-medium text-ink-soft">
               Test email override (optional)
             </span>
             <input
@@ -355,7 +355,7 @@ function SendModal({
               placeholder="Leave blank to send to recipient above"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              className="w-full rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none"
             />
           </label>
 
@@ -367,8 +367,8 @@ function SendModal({
               className="mt-0.5"
             />
             <span>
-              <span className="block font-medium text-slate-700">Dry run</span>
-              <span className="text-xs text-slate-500">
+              <span className="block font-medium text-ink-soft">Dry run</span>
+              <span className="text-xs text-muted">
                 Builds the report but does NOT send the email. Use to test.
               </span>
             </span>
@@ -382,8 +382,8 @@ function SendModal({
               className="mt-0.5"
             />
             <span>
-              <span className="block font-medium text-slate-700">Send as PDF</span>
-              <span className="text-xs text-slate-500">
+              <span className="block font-medium text-ink-soft">Send as PDF</span>
+              <span className="text-xs text-muted">
                 Email a short note with the report attached as a PDF, instead
                 of the full HTML in the body.
               </span>
@@ -391,7 +391,7 @@ function SendModal({
           </label>
 
           {sending && (
-            <p className="rounded-md bg-blue-50 p-3 text-blue-800">
+            <p className="rounded-md bg-accent-soft p-3 text-accent-deep">
               {kind === "simpro"
                 ? "Building report… 2–3 minutes."
                 : "Sending… should be quick."}
@@ -402,10 +402,10 @@ function SendModal({
             <p
               className={`rounded-md p-3 ${
                 result.status === "sent"
-                  ? "bg-green-50 text-green-800"
+                  ? "bg-brand-green/10 text-brand-green"
                   : result.status === "dry_run"
-                  ? "bg-blue-50 text-blue-800"
-                  : "bg-red-50 text-red-800"
+                  ? "bg-accent-soft text-accent-deep"
+                  : "bg-brand-red/10 text-brand-red"
               }`}
             >
               <strong>Status: {result.status}</strong>
@@ -415,11 +415,11 @@ function SendModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-rule px-6 py-4">
           <button
             onClick={onClose}
             disabled={sending}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
           >
             {result ? "Close" : "Cancel"}
           </button>
@@ -427,7 +427,7 @@ function SendModal({
             <button
               onClick={onConfirm}
               disabled={sending}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
             >
               {sending ? "Working…" : dryRun ? "Run dry-run" : "Send"}
             </button>

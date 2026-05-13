@@ -46,10 +46,10 @@ type GenStatus = "idle" | "generating" | "ok" | "err";
 
 function statusClass(status: string) {
   const s = status.toLowerCase();
-  if (s === "success" || s === "sent") return "bg-green-100 text-green-800";
-  if (s === "dry_run") return "bg-blue-100 text-blue-800";
-  if (s === "skipped") return "bg-slate-100 text-slate-700";
-  return "bg-red-100 text-red-800";
+  if (s === "success" || s === "sent") return "bg-brand-green/15 text-brand-green";
+  if (s === "dry_run") return "bg-accent-soft text-accent-deep";
+  if (s === "skipped") return "bg-paper-cool text-ink-soft";
+  return "bg-brand-red/15 text-brand-red";
 }
 
 function fmtDate(iso: string | null) {
@@ -194,16 +194,16 @@ export default function PortalReportsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <div className="mx-auto max-w-3xl rounded-md bg-red-50 p-4 text-sm text-red-800">
+      <main className="min-h-screen bg-paper-warm p-8">
+        <div className="mx-auto max-w-3xl rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
           {error ?? "Couldn't load your reports."}
         </div>
       </main>
@@ -211,11 +211,11 @@ export default function PortalReportsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Your reports</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-ink">Your reports</h1>
+          <p className="text-sm text-muted">
             Preview the same reports we email you on Mondays. The latest
             version is regenerated when you click Preview — useful when you
             want a mid-week check.
@@ -242,20 +242,20 @@ export default function PortalReportsPage() {
             return (
               <section
                 key={kind}
-                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+                className="rounded-lg border border-rule bg-white p-6 shadow-sm"
               >
                 <div className="mb-1 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-slate-900">
+                  <h2 className="text-lg font-semibold text-ink">
                     {meta.title}
                   </h2>
                   {disabled && (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+                    <span className="rounded-full bg-brand-amber/10 px-3 py-1 text-xs font-medium text-brand-amber">
                       {disabledReason}
                     </span>
                   )}
                 </div>
-                <p className="mb-1 text-sm text-slate-600">{meta.subtitle}</p>
-                <p className="mb-3 text-xs text-slate-500">
+                <p className="mb-1 text-sm text-ink-soft">{meta.subtitle}</p>
+                <p className="mb-3 text-xs text-muted">
                   {latest
                     ? `Last sent: ${fmtDate(latest.sent_at)}`
                     : "Not sent yet — your first one goes out next Monday."}
@@ -265,29 +265,29 @@ export default function PortalReportsPage() {
                   <button
                     onClick={() => onPreview(kind)}
                     disabled={generating || disabled}
-                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                   >
                     {generating ? "Generating…" : "Preview latest"}
                   </button>
                   <button
                     onClick={() => onDownloadPdf(kind)}
                     disabled={downloading === kind || disabled}
-                    className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                   >
                     {downloading === kind ? "Generating PDF…" : "Download PDF"}
                   </button>
                 </div>
 
                 {generating && (
-                  <p className="mt-3 text-sm text-slate-600">{meta.etaText}</p>
+                  <p className="mt-3 text-sm text-ink-soft">{meta.etaText}</p>
                 )}
                 {state.status === "ok" && state.message && (
-                  <p className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-800">
+                  <p className="mt-3 rounded-md bg-brand-green/10 p-3 text-sm text-brand-green">
                     {state.message}
                   </p>
                 )}
                 {state.status === "err" && state.message && (
-                  <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-800">
+                  <p className="mt-3 rounded-md bg-brand-red/10 p-3 text-sm text-brand-red">
                     {state.message}
                   </p>
                 )}
@@ -296,18 +296,18 @@ export default function PortalReportsPage() {
           })}
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-4 py-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <section className="overflow-hidden rounded-lg border border-rule bg-white shadow-sm">
+          <div className="border-b border-rule px-4 py-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Report history
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               Last {logs.length} run{logs.length === 1 ? "" : "s"} — newest
               first. Includes both your Monday cron sends and any preview runs.
             </p>
           </div>
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <table className="min-w-full divide-y divide-rule text-sm">
+            <thead className="bg-paper-warm text-left text-xs font-semibold uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Report</th>
@@ -315,10 +315,10 @@ export default function PortalReportsPage() {
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-paper-cool">
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-8 text-center text-muted">
                     No reports yet. They start arriving the Monday after your
                     bookkeeper sets you up.
                   </td>
@@ -326,11 +326,11 @@ export default function PortalReportsPage() {
               )}
               {logs.map((log) => (
                 <Fragment key={log.id}>
-                  <tr className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                  <tr className="hover:bg-paper-warm">
+                    <td className="px-4 py-3 text-ink-soft whitespace-nowrap">
                       {fmtDate(log.sent_at)}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-ink-soft">
                       {REPORT_TYPE_LABELS[log.report_type] ?? log.report_type}
                     </td>
                     <td className="px-4 py-3">
@@ -345,7 +345,7 @@ export default function PortalReportsPage() {
                         <button
                           onClick={() => viewReport(log.client_id, log.id)}
                           disabled={viewingId === log.id}
-                          className="text-sm font-medium text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                          className="text-sm font-medium text-accent-deep hover:text-accent-deep disabled:opacity-50"
                         >
                           {viewingId === log.id ? "Opening…" : "View"}
                         </button>
@@ -355,7 +355,7 @@ export default function PortalReportsPage() {
                           href={log.archive_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                          className="text-sm font-medium text-ink-soft hover:text-ink"
                           title="Open the archived copy in Google Drive"
                         >
                           Drive ↗

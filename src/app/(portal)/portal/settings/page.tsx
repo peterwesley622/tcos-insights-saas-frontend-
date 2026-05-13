@@ -134,16 +134,16 @@ export default function PortalSettingsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <div className="mx-auto max-w-3xl rounded-md bg-red-50 p-4 text-sm text-red-800">
+      <main className="min-h-screen bg-paper-warm p-8">
+        <div className="mx-auto max-w-3xl rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
           {error ?? "Couldn't load your account."}
         </div>
       </main>
@@ -151,11 +151,11 @@ export default function PortalSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <header>
-          <h1 className="text-2xl font-bold text-slate-900">Your settings</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-ink">Your settings</h1>
+          <p className="text-sm text-muted">
             Update where reports are sent and connect your Xero account.
           </p>
         </header>
@@ -163,20 +163,20 @@ export default function PortalSettingsPage() {
         {/* Email settings */}
         <form
           onSubmit={onSaveSettings}
-          className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          className="space-y-4 rounded-lg border border-rule bg-white p-6 shadow-sm"
         >
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
             Where to send reports
           </h2>
           <div>
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-ink-soft">
               Recipient emails
             </span>
             <EmailListInput
               values={ownerEmailList}
               onChange={setOwnerEmailList}
             />
-            <span className="mt-2 block text-xs text-slate-500">
+            <span className="mt-2 block text-xs text-muted">
               We send your weekly Monday reports to every address listed
               here. Each one can also sign in to this portal. Click{" "}
               <strong>Add another email</strong> to add more recipients,
@@ -184,11 +184,11 @@ export default function PortalSettingsPage() {
               Monday run.
             </span>
           </div>
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-rule pt-4">
             {saveMsg && (
               <span
                 className={`mr-auto text-sm ${
-                  saveMsg.kind === "ok" ? "text-green-700" : "text-red-700"
+                  saveMsg.kind === "ok" ? "text-brand-green" : "text-brand-red"
                 }`}
               >
                 {saveMsg.text}
@@ -197,7 +197,7 @@ export default function PortalSettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -205,22 +205,22 @@ export default function PortalSettingsPage() {
         </form>
 
         {/* Xero connection */}
-        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-rule bg-white p-6 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Xero connection
             </h2>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                 client.xero_connected
-                  ? "bg-green-100 text-green-800"
-                  : "bg-amber-100 text-amber-900"
+                  ? "bg-brand-green/15 text-brand-green"
+                  : "bg-brand-amber/15 text-brand-amber"
               }`}
             >
               {client.xero_connected ? "Connected" : "Not connected"}
             </span>
           </div>
-          <p className="mb-4 text-sm text-slate-600">
+          <p className="mb-4 text-sm text-ink-soft">
             {client.xero_connected
               ? "Your Xero account is connected. We use it to build the weekly financial scorecard report (revenue / GP / net profit vs your targets)."
               : "Connect your Xero account so we can include the financial scorecard in your weekly reports. Without Xero, you'll only get the labour and quote-follow-up reports."}
@@ -232,7 +232,7 @@ export default function PortalSettingsPage() {
                   type="button"
                   onClick={onTestXero}
                   disabled={xeroAction}
-                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
                 >
                   Test connection
                 </button>
@@ -240,7 +240,7 @@ export default function PortalSettingsPage() {
                   type="button"
                   onClick={onDisconnectXero}
                   disabled={xeroAction}
-                  className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  className="rounded-md border border-brand-red bg-white px-4 py-2 text-sm font-medium text-brand-red hover:bg-brand-red/10 disabled:opacity-50"
                 >
                   Disconnect
                 </button>
@@ -250,7 +250,7 @@ export default function PortalSettingsPage() {
                 type="button"
                 onClick={onConnectXero}
                 disabled={xeroAction}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
               >
                 {xeroAction ? "Redirecting…" : "Connect Xero"}
               </button>
@@ -260,8 +260,8 @@ export default function PortalSettingsPage() {
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
                 xeroMsg.kind === "ok"
-                  ? "bg-green-50 text-green-800"
-                  : "bg-red-50 text-red-800"
+                  ? "bg-brand-green/10 text-brand-green"
+                  : "bg-brand-red/10 text-brand-red"
               }`}
             >
               {xeroMsg.text}

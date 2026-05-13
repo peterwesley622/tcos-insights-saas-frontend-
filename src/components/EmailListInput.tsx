@@ -44,7 +44,7 @@ export function EmailListInput({
 
   const inputCls =
     inputClassName ??
-    "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none";
+    "w-full rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none";
 
   return (
     <div className="space-y-2">
@@ -65,7 +65,7 @@ export function EmailListInput({
             // user is never left with no input to type into.
             aria-label="Remove email"
             title="Remove this email"
-            className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-2 text-slate-500 hover:bg-slate-50 hover:text-red-600"
+            className="shrink-0 rounded-md border border-rule bg-white px-2 py-2 text-muted hover:bg-paper-warm hover:text-brand-red"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +87,7 @@ export function EmailListInput({
       <button
         type="button"
         onClick={addRow}
-        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-rule bg-white px-3 py-1.5 text-sm font-medium text-ink-soft hover:border-muted hover:text-ink"
       >
         <span aria-hidden>+</span>
         <span>Add another email</span>

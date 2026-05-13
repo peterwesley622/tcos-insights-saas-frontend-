@@ -15,10 +15,10 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
 
 function statusClass(status: string) {
   const s = status.toLowerCase();
-  if (s === "success" || s === "sent") return "bg-green-100 text-green-800";
-  if (s === "dry_run") return "bg-blue-100 text-blue-800";
-  if (s === "skipped") return "bg-slate-100 text-slate-700";
-  return "bg-red-100 text-red-800";
+  if (s === "success" || s === "sent") return "bg-brand-green/15 text-brand-green";
+  if (s === "dry_run") return "bg-accent-soft text-accent-deep";
+  if (s === "skipped") return "bg-paper-cool text-ink-soft";
+  return "bg-brand-red/15 text-brand-red";
 }
 
 function fmtDate(iso: string | null) {
@@ -111,20 +111,20 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
-        <p className="text-slate-600">Loading…</p>
+      <main className="min-h-screen bg-paper-warm p-8">
+        <p className="text-ink-soft">Loading…</p>
       </main>
     );
   }
 
   if (error || !client) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8">
+      <main className="min-h-screen bg-paper-warm p-8">
         <div className="mx-auto max-w-3xl">
-          <Link href={`/clients/${clientId}`} className="text-sm text-slate-600 hover:text-slate-900">
+          <Link href={`/clients/${clientId}`} className="text-sm text-ink-soft hover:text-ink">
             ← Back to client
           </Link>
-          <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mt-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             {error ?? "Client not found."}
           </div>
         </div>
@@ -133,12 +133,12 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Report history — {client.business_name}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-ink">Report history — {client.business_name}</h1>
+            <p className="text-sm text-muted">
               Last {logs.length} report run{logs.length === 1 ? "" : "s"}, newest first.
             </p>
           </div>
@@ -146,19 +146,19 @@ export default function HistoryPage() {
             <button
               onClick={onRefresh}
               disabled={refreshing}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-md border border-rule bg-white px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
             >
               {refreshing ? "Refreshing…" : "Refresh"}
             </button>
-            <Link href={`/clients/${clientId}`} className="text-sm text-slate-600 hover:text-slate-900">
+            <Link href={`/clients/${clientId}`} className="text-sm text-ink-soft hover:text-ink">
               ← Back to client
             </Link>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-lg border border-rule bg-white shadow-sm">
+          <table className="min-w-full divide-y divide-rule text-sm">
+            <thead className="bg-paper-warm text-left text-xs font-semibold uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Report</th>
@@ -166,10 +166,10 @@ export default function HistoryPage() {
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-paper-cool">
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-8 text-center text-muted">
                     No report runs yet.
                   </td>
                 </tr>
@@ -182,9 +182,9 @@ export default function HistoryPage() {
                 const isViewing = viewingId === log.id;
                 return (
                   <Fragment key={log.id}>
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-slate-700">{fmtDate(log.sent_at)}</td>
-                      <td className="px-4 py-3 text-slate-700">
+                    <tr className="hover:bg-paper-warm">
+                      <td className="px-4 py-3 text-ink-soft">{fmtDate(log.sent_at)}</td>
+                      <td className="px-4 py-3 text-ink-soft">
                         {REPORT_TYPE_LABELS[log.report_type] ?? log.report_type}
                       </td>
                       <td className="px-4 py-3">
@@ -199,7 +199,7 @@ export default function HistoryPage() {
                           <button
                             onClick={() => viewReport(log.id)}
                             disabled={isViewing}
-                            className="text-sm font-medium text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                            className="text-sm font-medium text-accent-deep hover:text-accent-deep disabled:opacity-50"
                           >
                             {isViewing ? "Opening…" : "View"}
                           </button>
@@ -209,7 +209,7 @@ export default function HistoryPage() {
                             href={log.archive_url!}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                            className="text-sm font-medium text-ink-soft hover:text-ink"
                             title="Open the archived copy in Google Drive"
                           >
                             Drive ↗
@@ -218,7 +218,7 @@ export default function HistoryPage() {
                         {hasError && (
                           <button
                             onClick={() => toggleExpand(log.id)}
-                            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                            className="text-sm font-medium text-ink-soft hover:text-ink"
                           >
                             {isExpanded ? "Hide error" : "Show error"}
                           </button>
@@ -226,8 +226,8 @@ export default function HistoryPage() {
                       </td>
                     </tr>
                     {hasError && isExpanded && (
-                      <tr className="bg-red-50/50">
-                        <td colSpan={4} className="px-4 py-3 text-xs text-red-800 font-mono whitespace-pre-wrap break-all">
+                      <tr className="bg-brand-red/10/50">
+                        <td colSpan={4} className="px-4 py-3 text-xs text-brand-red font-mono whitespace-pre-wrap break-all">
                           {log.error_message}
                         </td>
                       </tr>

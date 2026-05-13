@@ -93,16 +93,16 @@ export default function NewClientPage() {
     (!wantsSimpro || (companyId != null && detectResult?.status !== "error"));
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">Add client</h1>
-          <Link href="/clients" className="text-sm text-slate-600 hover:text-slate-900">
+          <h1 className="text-2xl font-bold text-ink">Add client</h1>
+          <Link href="/clients" className="text-sm text-ink-soft hover:text-ink">
             ← Back to clients
           </Link>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={onSubmit} className="space-y-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
           <Section title="Business">
             <Field label="Business name" required>
               <input
@@ -128,7 +128,7 @@ export default function NewClientPage() {
                 onChange={setOwnerEmailList}
                 inputClassName={inputCls}
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted">
                 Each address receives every report and can sign in to the
                 portal. You can invite each one individually later from the
                 client edit page.
@@ -137,7 +137,7 @@ export default function NewClientPage() {
           </Section>
 
           <Section title="Simpro connection (optional)">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               Leave both fields blank for Xero-only clients — they&apos;ll get
               the financial scorecard report only, with no labour or quote
               follow-up emails. To enable those, paste your Simpro URL and
@@ -173,13 +173,13 @@ export default function NewClientPage() {
               type="button"
               onClick={onDetect}
               disabled={detecting || !simproUrl.trim() || !simproKey.trim()}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
             >
               {detecting ? "Detecting…" : "Detect companies"}
             </button>
 
             {detectResult?.status === "detected" && (
-              <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">
+              <div className="rounded-md bg-brand-green/10 p-3 text-sm text-brand-green">
                 ✅ Connected. Found <strong>{detectResult.companies[0]?.name}</strong> (ID {detectResult.suggested_company_id}).
               </div>
             )}
@@ -201,10 +201,10 @@ export default function NewClientPage() {
             )}
 
             {detectResult?.status === "error" && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+              <div className="rounded-md bg-brand-red/10 p-3 text-sm text-brand-red">
                 ❌ {detectResult.error}
                 {detectResult.details && (
-                  <div className="mt-1 text-xs text-red-600">{detectResult.details}</div>
+                  <div className="mt-1 text-xs text-brand-red">{detectResult.details}</div>
                 )}
               </div>
             )}
@@ -248,10 +248,10 @@ export default function NewClientPage() {
                 className="mt-0.5"
               />
               <span>
-                <span className="block text-sm font-medium text-slate-700">
+                <span className="block text-sm font-medium text-ink-soft">
                   Wages live in Operating Expenses (not Cost of Sales)
                 </span>
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-muted">
                   Tick this for clients whose Xero chart of accounts puts wages, super and
                   worker&apos;s comp under OpEx instead of Cost of Sales. Leave unticked unless
                   you know otherwise.
@@ -261,20 +261,20 @@ export default function NewClientPage() {
           </Section>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
+            <div className="rounded-md bg-brand-red/10 p-3 text-sm text-brand-red">{error}</div>
           )}
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+          <div className="flex items-center justify-end gap-3 border-t border-rule pt-6">
             <Link
               href="/clients"
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-rule bg-white px-4 py-2 text-sm font-medium text-ink-soft hover:bg-paper-warm"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
             >
               {submitting ? "Creating…" : "Create client"}
             </button>
@@ -286,12 +286,12 @@ export default function NewClientPage() {
 }
 
 const inputCls =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none";
+  "w-full rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
         {title}
       </legend>
       {children}
@@ -310,8 +310,8 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
-        {label} {required && <span className="text-red-600">*</span>}
+      <span className="mb-1 block text-sm font-medium text-ink-soft">
+        {label} {required && <span className="text-brand-red">*</span>}
       </span>
       {children}
     </label>

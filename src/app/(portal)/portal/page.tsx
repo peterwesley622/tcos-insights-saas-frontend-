@@ -68,20 +68,20 @@ export default async function PortalDashboard() {
     logs.find((l) => l.status === "success")?.sent_at ?? null;
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
+    <main className="min-h-screen bg-paper-warm p-8">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-ink">
             Welcome{client ? `, ${client.business_name}` : ""}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Your TCOS Insights portal — see the latest reports we send you,
             update your targets, and connect your Xero account.
           </p>
         </header>
 
         {fetchError && (
-          <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-800">
+          <div className="mb-4 rounded-md bg-brand-red/10 p-4 text-sm text-brand-red">
             <strong>Couldn&apos;t load your data:</strong> {fetchError}
           </div>
         )}
@@ -109,34 +109,34 @@ export default async function PortalDashboard() {
           />
         </div>
 
-        <section className="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <section className="mb-6 rounded-lg border border-rule bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
             Latest report by type
           </h2>
           {Object.keys(latestByType).length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               No reports have been sent yet. Reports go out automatically every
               Monday morning. If you&apos;re expecting one and haven&apos;t got
               it, let your bookkeeper know.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-paper-cool">
               {Object.entries(latestByType).map(([type, log]) => (
                 <li
                   key={type}
                   className="flex items-center justify-between py-3"
                 >
                   <div>
-                    <div className="text-sm font-medium text-slate-900">
+                    <div className="text-sm font-medium text-ink">
                       {REPORT_LABELS[type] ?? type}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-muted">
                       {fmtRelative(log?.sent_at ?? null)} · {fmtDate(log?.sent_at ?? null)}
                     </div>
                   </div>
                   <Link
                     href="/portal/reports"
-                    className="text-sm font-medium text-slate-700 hover:text-slate-900"
+                    className="text-sm font-medium text-ink-soft hover:text-ink"
                   >
                     View →
                   </Link>
@@ -146,35 +146,35 @@ export default async function PortalDashboard() {
           )}
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <section className="rounded-lg border border-rule bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
             Quick actions
           </h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Link
               href="/portal/targets"
-              className="rounded-md border border-slate-200 p-4 hover:bg-slate-50"
+              className="rounded-md border border-rule p-4 hover:bg-paper-warm"
             >
-              <div className="text-sm font-semibold text-slate-900">Set targets</div>
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="text-sm font-semibold text-ink">Set targets</div>
+              <div className="mt-1 text-xs text-muted">
                 Monthly revenue, GP, and net profit goals.
               </div>
             </Link>
             <Link
               href="/portal/reports"
-              className="rounded-md border border-slate-200 p-4 hover:bg-slate-50"
+              className="rounded-md border border-rule p-4 hover:bg-paper-warm"
             >
-              <div className="text-sm font-semibold text-slate-900">View reports</div>
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="text-sm font-semibold text-ink">View reports</div>
+              <div className="mt-1 text-xs text-muted">
                 Re-open past Monday reports any time.
               </div>
             </Link>
             <Link
               href="/portal/settings"
-              className="rounded-md border border-slate-200 p-4 hover:bg-slate-50"
+              className="rounded-md border border-rule p-4 hover:bg-paper-warm"
             >
-              <div className="text-sm font-semibold text-slate-900">My settings</div>
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="text-sm font-semibold text-ink">My settings</div>
+              <div className="mt-1 text-xs text-muted">
                 Email + extra recipients on your Monday reports.
               </div>
             </Link>
@@ -199,25 +199,25 @@ function Stat({
   return (
     <div
       className={`rounded-lg border p-4 ${
-        warn ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"
+        warn ? "border-amber-200 bg-brand-amber/10" : "border-rule bg-white"
       }`}
     >
       <div
         className={`text-xs font-medium uppercase tracking-wide ${
-          warn ? "text-amber-800" : "text-slate-500"
+          warn ? "text-brand-amber" : "text-muted"
         }`}
       >
         {label}
       </div>
       <div
         className={`mt-1 text-2xl font-bold ${
-          warn ? "text-amber-900" : "text-slate-900"
+          warn ? "text-brand-amber" : "text-ink"
         }`}
       >
         {value}
       </div>
       {sub && (
-        <div className={`mt-0.5 text-xs ${warn ? "text-amber-800" : "text-slate-500"}`}>
+        <div className={`mt-0.5 text-xs ${warn ? "text-brand-amber" : "text-muted"}`}>
           {sub}
         </div>
       )}
