@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { type SimproDetectResult } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
+import {
+  EmailListInput,
+  serializeOwnerEmails,
+} from "@/components/EmailListInput";
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -12,7 +16,9 @@ export default function NewClientPage() {
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [ownerEmails, setOwnerEmails] = useState("");
+  // Edit as a list of input rows; flatten to semicolon-separated string
+  // for the backend at submit time.
+  const [ownerEmailList, setOwnerEmailList] = useState<string[]>([""]);
   const [simproUrl, setSimproUrl] = useState("");
   const [simproKey, setSimproKey] = useState("");
   const [companyId, setCompanyId] = useState<number | null>(null);
@@ -62,7 +68,7 @@ export default function NewClientPage() {
       const created = await api.createClient({
         business_name: businessName.trim(),
         owner_name: ownerName.trim() || undefined,
-        owner_emails: ownerEmails.trim() || undefined,
+        owner_emails: serializeOwnerEmails(ownerEmailList) ?? undefined,
         simpro_base_url: simproUrl.trim() || undefined,
         simpro_api_key: simproKey.trim() || undefined,
         simpro_company_id: companyId ?? 0,
@@ -117,13 +123,16 @@ export default function NewClientPage() {
               />
             </Field>
             <Field label="Owner emails (optional)">
-              <input
-                type="text"
-                value={ownerEmails}
-                onChange={(e) => setOwnerEmails(e.target.value)}
-                placeholder="One or more, semicolon-separated. Each address gets every report and can sign in to the portal."
-                className={inputCls}
+              <EmailListInput
+                values={ownerEmailList}
+                onChange={setOwnerEmailList}
+                inputClassName={inputCls}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Each address receives every report and can sign in to the
+                portal. You can invite each one individually later from the
+                client edit page.
+              </p>
             </Field>
           </Section>
 

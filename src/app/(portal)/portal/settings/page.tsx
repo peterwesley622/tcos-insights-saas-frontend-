@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { type Client, type ClientUpdate } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
+import {
+  EmailListInput,
+  parseOwnerEmails,
+  serializeOwnerEmails,
+} from "@/components/EmailListInput";
 
 /**
  * Combined "My Settings" + "Connect Xero" page. The brief lists them as
@@ -17,9 +22,11 @@ export default function PortalSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Editable form state: the multi-owner emails list (semicolon-separated).
-  // Each address gets every report AND can sign in to the portal.
-  const [ownerEmails, setOwnerEmails] = useState("");
+  // Editable form state: the multi-owner emails list. Stored as a
+  // semicolon-separated string on the backend, edited as an array of
+  // input rows in the UI. Each address gets every report AND can sign
+  // in to the portal.
+  const [ownerEmailList, setOwnerEmailList] = useState<string[]>([""]);
   const [saveMsg, setSaveMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -33,7 +40,12 @@ export default function PortalSettingsPage() {
       .then((list) => {
         const me = list[0] ?? null;
         setClient(me);
-        if (me) setOwnerEmails(me.owner_emails ?? "");
+        if (me) {
+          const parsed = parseOwnerEmails(me.owner_emails);
+          // Always keep at least one row visible so there's somewhere
+          // to type when the list is currently empty.
+          setOwnerEmailList(parsed.length > 0 ? parsed : [""]);
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
@@ -43,8 +55,12 @@ export default function PortalSettingsPage() {
     e.preventDefault();
     if (!client) return;
     const patch: ClientUpdate = {};
-    if ((ownerEmails || null) !== client.owner_emails) {
-      patch.owner_emails = ownerEmails || null;
+    const serialized = serializeOwnerEmails(ownerEmailList);
+    // Normalize the stored value the same way so trivial formatting
+    // differences ("a@x; b@y" vs "a@x;b@y") don't trigger a no-op save.
+    const storedNormalized = serializeOwnerEmails(parseOwnerEmails(client.owner_emails));
+    if (serialized !== storedNormalized) {
+      patch.owner_emails = serialized;
     }
     if (Object.keys(patch).length === 0) {
       setSaveMsg({ kind: "ok", text: "No changes to save." });
@@ -152,23 +168,22 @@ export default function PortalSettingsPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Where to send reports
           </h2>
-          <label className="block">
+          <div>
             <span className="mb-1 block text-sm font-medium text-slate-700">
               Recipient emails
             </span>
-            <input
-              type="text"
-              value={ownerEmails}
-              onChange={(e) => setOwnerEmails(e.target.value)}
-              placeholder="One or more, semicolon-separated"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            <EmailListInput
+              values={ownerEmailList}
+              onChange={setOwnerEmailList}
             />
-            <span className="mt-1 block text-xs text-slate-500">
-              We send your weekly Monday reports to every address listed here.
-              Each one can also sign in to this portal. Changes take effect on
-              the next Monday run.
+            <span className="mt-2 block text-xs text-slate-500">
+              We send your weekly Monday reports to every address listed
+              here. Each one can also sign in to this portal. Click{" "}
+              <strong>Add another email</strong> to add more recipients,
+              the trash icon to remove one. Changes take effect on the next
+              Monday run.
             </span>
-          </label>
+          </div>
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
             {saveMsg && (
               <span

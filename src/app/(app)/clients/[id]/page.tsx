@@ -5,6 +5,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { type Client, type ClientUpdate } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
+import {
+  EmailListInput,
+  parseOwnerEmails as parseOwnerEmailsShared,
+  serializeOwnerEmails,
+} from "@/components/EmailListInput";
 
 export default function EditClientPage() {
   const params = useParams<{ id: string }>();
@@ -24,7 +29,11 @@ export default function EditClientPage() {
 
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [ownerEmails, setOwnerEmails] = useState("");
+  // Owner emails are stored as a semicolon-separated string on the
+  // backend but edited as an array in the UI so each address gets its
+  // own input row + remove button. parseOwnerEmailsShared / serialize
+  // bridge between the two representations.
+  const [ownerEmailList, setOwnerEmailList] = useState<string[]>([""]);
   const [simproUrl, setSimproUrl] = useState("");
   const [newSimproKey, setNewSimproKey] = useState("");
   const [companyId, setCompanyId] = useState<number | "">("");
@@ -73,7 +82,10 @@ export default function EditClientPage() {
         setClient(c);
         setBusinessName(c.business_name);
         setOwnerName(c.owner_name ?? "");
-        setOwnerEmails(c.owner_emails ?? "");
+        const parsed = parseOwnerEmailsShared(c.owner_emails);
+        // Always leave at least one row so the form has a target to
+        // type into when this client has no owners configured yet.
+        setOwnerEmailList(parsed.length > 0 ? parsed : [""]);
         setSimproUrl(c.simpro_base_url ?? "");
         setCompanyId(c.simpro_company_id ?? "");
         setGpLow(c.gp_threshold_low ?? "");
@@ -98,7 +110,14 @@ export default function EditClientPage() {
     const patch: ClientUpdate = {};
     if (businessName !== client.business_name) patch.business_name = businessName;
     if ((ownerName || null) !== client.owner_name) patch.owner_name = ownerName || null;
-    if ((ownerEmails || null) !== client.owner_emails) patch.owner_emails = ownerEmails || null;
+    const ownerEmailsSerialized = serializeOwnerEmails(ownerEmailList);
+    // Compare normalized forms on both sides so trivial whitespace
+    // differences between the stored string and the freshly-built one
+    // don't trigger a redundant PATCH on save.
+    const storedNormalized = serializeOwnerEmails(parseOwnerEmailsShared(client.owner_emails));
+    if (ownerEmailsSerialized !== storedNormalized) {
+      patch.owner_emails = ownerEmailsSerialized;
+    }
     if ((simproUrl || null) !== client.simpro_base_url) patch.simpro_base_url = simproUrl || null;
     if (newSimproKey.trim()) patch.simpro_api_key = newSimproKey.trim();
     const cid = companyId === "" ? null : Number(companyId);
@@ -282,21 +301,10 @@ export default function EditClientPage() {
   }
 
   // Helper: parse the persisted owner_emails string into a clean list
-  // so the JSX can render a row per owner with its own Invite button.
-  function parseOwnerEmails(raw: string | null | undefined): string[] {
-    if (!raw) return [];
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const part of raw.replace(/,/g, ";").split(";")) {
-      const addr = part.trim();
-      if (!addr || !addr.includes("@")) continue;
-      const key = addr.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(addr);
-    }
-    return out;
-  }
+  // so the Portal access card can render a row per owner with its own
+  // Invite button. Local alias for readability; identical to the
+  // exported parseOwnerEmailsShared.
+  const parseOwnerEmails = parseOwnerEmailsShared;
 
   async function onToggleActive() {
     if (!client) return;
@@ -406,15 +414,15 @@ export default function EditClientPage() {
               />
             </Field>
             <Field label="Owner emails">
-              <input
-                type="text"
-                value={ownerEmails}
-                onChange={(e) => setOwnerEmails(e.target.value)}
-                placeholder="One or more, semicolon-separated"
-                className={inputCls}
+              <EmailListInput
+                values={ownerEmailList}
+                onChange={setOwnerEmailList}
+                inputClassName={inputCls}
               />
               <p className="mt-1 text-xs text-slate-500">
-                Each address receives every report and can sign in to the portal.
+                Each address receives every report and can sign in to the
+                portal. Click <strong>Add another email</strong> to invite
+                more people; click the trash icon to remove one.
               </p>
             </Field>
           </Section>
