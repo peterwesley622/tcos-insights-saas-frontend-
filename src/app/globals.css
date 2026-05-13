@@ -1,6 +1,185 @@
 @import "tailwindcss";
 
+/* -----------------------------------------------------------------------------
+ * TCOS / Better Back Office brand tokens
+ *
+ * Sourced from brand-voice-guidelines.md.pdf section 7 (Visual identity).
+ * Defined here as both raw CSS variables (for inline styles that need them,
+ * e.g. brand colours inside the report HTML builders) AND registered with
+ * Tailwind v4 via @theme below, so they're usable as utility classes like
+ * `bg-paper`, `text-ink`, `border-rule`, `text-accent`.
+ *
+ * Palette intent: warm cream paper, dark ink, single orange accent. No
+ * gradients beyond shadow on CTA. No stock photography.
+ * --------------------------------------------------------------------------- */
+:root {
+  /* Ink (dark) scale - body text on light bg, dark sections, footer */
+  --ink: #14202b;
+  --ink-2: #1d2c3a;
+  --ink-soft: #3b4a59;
+  --muted: #6b7785;
+
+  /* Paper (light) scale - default backgrounds, warm cream rather than white */
+  --paper: #fbf9f4;
+  --paper-warm: #f4efe5;
+  --paper-cool: #eee9dd;
+  --rule: #d9d2c3;
+
+  /* Accent - single orange, used sparingly */
+  --accent: #e96a1a;
+  --accent-deep: #b34d0d;
+  --accent-soft: #f9c79e;
+
+  /* Traffic-light status (audit working / cracks / broken) */
+  --brand-green: #2d8a3e;
+  --brand-amber: #e8a317;
+  --brand-red: #c8392f;
+}
+
+/* Register the same tokens with Tailwind v4 so utility classes pick them up. */
+@theme {
+  --color-ink: #14202b;
+  --color-ink-2: #1d2c3a;
+  --color-ink-soft: #3b4a59;
+  --color-muted: #6b7785;
+
+  --color-paper: #fbf9f4;
+  --color-paper-warm: #f4efe5;
+  --color-paper-cool: #eee9dd;
+  --color-rule: #d9d2c3;
+
+  --color-accent: #e96a1a;
+  --color-accent-deep: #b34d0d;
+  --color-accent-soft: #f9c79e;
+
+  --color-brand-green: #2d8a3e;
+  --color-brand-amber: #e8a317;
+  --color-brand-red: #c8392f;
+
+  /* Layout primitives from section 7 of the guidelines */
+  --spacing-container: 1080px;
+  --spacing-content: 760px;
+}
+
+/* -----------------------------------------------------------------------------
+ * Typography baseline
+ *
+ * Brand mandates Helvetica Neue / Helvetica / Arial / system-ui (in that
+ * order). Body 17px / 1.55 line-height. Headlines weight 800 with tight
+ * letter-spacing. Australian English spelling everywhere in copy.
+ * --------------------------------------------------------------------------- */
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Headlines are claims, not topics - weight 800, tight letter-spacing */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+/* -----------------------------------------------------------------------------
+ * Eyebrow labels
+ *
+ * Section anchors used above headlines ("PART 1 - THE JOURNEY" style).
+ * 12-13px, wide letter-spacing, uppercase, weight 800, in accent orange.
+ * Used sparingly - one per section header at most.
+ * --------------------------------------------------------------------------- */
+.eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* -----------------------------------------------------------------------------
+ * CTA buttons - orange accent with deep shadow + 2px lift on hover
+ *
+ * Per "Interaction primitives observed" in the guidelines. Used as a
+ * class so we don't have to reach for the same five Tailwind utilities
+ * everywhere. Pair-friendly with a plain `<button>`.
+ * --------------------------------------------------------------------------- */
+.btn-accent {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 10px 18px;
+  border: none;
+  box-shadow: 0 6px 14px -4px rgba(233, 106, 26, 0.45);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  cursor: pointer;
+}
+
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -6px rgba(233, 106, 26, 0.55);
+}
+
+.btn-accent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary button - paper background with rule border, ink text */
+.btn-secondary {
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 10px 18px;
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--paper-warm);
+  border-color: var(--ink-soft);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------------------
+ * Card primitive - white surface on paper background, soft rule border.
+ * --------------------------------------------------------------------------- */
+.card {
+  background: #ffffff;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+}
+
+/* -----------------------------------------------------------------------------
+ * Form input baseline - subtle warm-cream focus halo + rule borders.
+ *
+ * The Tailwind utility classes still work; this just gives unstyled
+ * <input> elements a sane default that matches the brand.
+ * --------------------------------------------------------------------------- */
+input,
+select,
+textarea {
+  color: var(--ink);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: -1px;
 }

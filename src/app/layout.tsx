@@ -11,11 +11,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Body bg + text colour live in globals.css now (paper cream / ink dark)
+  // so they apply uniformly to every page including ones that don't render
+  // their own wrapper. We just set min-height + flex here for the layout.
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-white text-slate-900">
-        {children}
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
