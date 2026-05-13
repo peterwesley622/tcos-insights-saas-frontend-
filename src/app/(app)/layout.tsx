@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Header } from "@/components/Header";
+import { AdminSidebar } from "@/components/AdminSidebar";
 import { type Principal } from "@/lib/api";
 import { makeServerApi } from "@/lib/api-server";
 import { createClient } from "@/lib/supabase/server";
@@ -35,9 +35,8 @@ export default async function AppLayout({
   }
 
   return (
-    <>
-      <Header email={user?.email ?? null} principal={principal} />
+    <AdminSidebar email={user?.email ?? null} principal={principal}>
       {children}
-    </>
+    </AdminSidebar>
   );
 }

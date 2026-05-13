@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { PortalHeader } from "@/components/PortalHeader";
+import { PortalSidebar } from "@/components/PortalSidebar";
 import { type Client, type Principal } from "@/lib/api";
 import { makeServerApi } from "@/lib/api-server";
 import { createClient } from "@/lib/supabase/server";
@@ -54,12 +54,11 @@ export default async function PortalLayout({
   }
 
   return (
-    <>
-      <PortalHeader
-        email={user.email ?? null}
-        businessName={myClient?.business_name ?? null}
-      />
+    <PortalSidebar
+      email={user.email ?? null}
+      businessName={myClient?.business_name ?? null}
+    >
       {children}
-    </>
+    </PortalSidebar>
   );
 }
