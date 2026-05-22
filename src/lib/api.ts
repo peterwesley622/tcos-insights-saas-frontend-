@@ -282,7 +282,7 @@ export function buildApi(getAccessToken: GetAccessToken) {
      */
     downloadReportPdf: async (
       clientId: number,
-      kind: "simpro" | "scorecard" | "quotes",
+      kind: "simpro" | "scorecard" | "quotes" | "monthly",
     ): Promise<Blob> => {
       const path = `/api/clients/${clientId}/reports/${kind}/pdf`;
       const res = await fetch(`${getApiBaseUrl()}${path}`, {
@@ -318,6 +318,14 @@ export function buildApi(getAccessToken: GetAccessToken) {
       requestText(`/api/clients/${clientId}/reports/quotes?format=html`, {
         method: "POST",
       }),
+    /**
+     * Monthly Financial Recap preview - same shape as the scorecard
+     * preview but covers the previous full calendar month.
+     */
+    generateMonthlyHtml: (clientId: number) =>
+      requestText(`/api/clients/${clientId}/reports/monthly?format=html`, {
+        method: "POST",
+      }),
     sendSimproReport: (
       clientId: number,
       opts: { test_email?: string; dry_run?: boolean; as_pdf?: boolean } = {},
@@ -343,6 +351,20 @@ export function buildApi(getAccessToken: GetAccessToken) {
       const tail = qs.toString() ? `?${qs.toString()}` : "";
       return request<ReportSendResult>(
         `/api/clients/${clientId}/reports/scorecard/send${tail}`,
+        { method: "POST" },
+      );
+    },
+    sendMonthlyReport: (
+      clientId: number,
+      opts: { test_email?: string; dry_run?: boolean; as_pdf?: boolean } = {},
+    ) => {
+      const qs = new URLSearchParams();
+      if (opts.test_email) qs.set("test_email", opts.test_email);
+      if (opts.dry_run) qs.set("dry_run", "true");
+      if (opts.as_pdf) qs.set("as_pdf", "true");
+      const tail = qs.toString() ? `?${qs.toString()}` : "";
+      return request<ReportSendResult>(
+        `/api/clients/${clientId}/reports/monthly/send${tail}`,
         { method: "POST" },
       );
     },

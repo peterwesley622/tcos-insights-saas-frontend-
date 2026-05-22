@@ -6,7 +6,7 @@ import Link from "next/link";
 import { type Client, type ReportSendResult } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
 
-type ReportKind = "simpro" | "scorecard" | "quotes_jobs";
+type ReportKind = "simpro" | "scorecard" | "quotes_jobs" | "monthly";
 
 const REPORT_META: Record<
   ReportKind,
@@ -28,6 +28,12 @@ const REPORT_META: Record<
       "Priority-scored open quotes (last 90 days) and active jobs flagged for labour/materials overruns, low GP, under-invoicing, or stale progress.",
     etaText: "1–3 minutes depending on quote count.",
   },
+  monthly: {
+    title: "Monthly Financial Recap",
+    subtitle:
+      "Previous full calendar month: revenue, materials, wages, GP, overheads, net profit vs targets. Auto-fires on the 7th of each month.",
+    etaText: "Usually under 30 seconds.",
+  },
 };
 
 type Status = "idle" | "generating" | "ok" | "err";
@@ -45,6 +51,7 @@ export default function ReportsPage() {
     simpro: { status: "idle" },
     scorecard: { status: "idle" },
     quotes_jobs: { status: "idle" },
+    monthly: { status: "idle" },
   });
 
   const [sendModal, setSendModal] = useState<ReportKind | null>(null);
@@ -72,6 +79,8 @@ export default function ReportsPage() {
         html = await api.generateSimproReportHtml(clientId);
       } else if (kind === "scorecard") {
         html = await api.generateScorecardHtml(clientId);
+      } else if (kind === "monthly") {
+        html = await api.generateMonthlyHtml(clientId);
       } else {
         html = await api.generateQuotesJobsHtml(clientId);
       }
@@ -114,6 +123,8 @@ export default function ReportsPage() {
           ? "Labour & Productivity"
           : kind === "scorecard"
           ? "Financial Scorecard"
+          : kind === "monthly"
+          ? "Monthly Financial Recap"
           : "Quote Follow-Up & Job Health";
       const a = document.createElement("a");
       a.href = url;
@@ -153,6 +164,8 @@ export default function ReportsPage() {
         result = await api.sendSimproReport(clientId, opts);
       } else if (sendModal === "scorecard") {
         result = await api.sendScorecardReport(clientId, opts);
+      } else if (sendModal === "monthly") {
+        result = await api.sendMonthlyReport(clientId, opts);
       } else {
         result = await api.sendQuotesJobsReport(clientId, opts);
       }
@@ -207,7 +220,7 @@ export default function ReportsPage() {
         </div>
 
         <div className="space-y-4">
-          {(["simpro", "scorecard", "quotes_jobs"] as ReportKind[]).map((kind) => {
+          {(["simpro", "scorecard", "monthly", "quotes_jobs"] as ReportKind[]).map((kind) => {
             const meta = REPORT_META[kind];
             const state = genState[kind];
             const generating = state.status === "generating";
@@ -218,10 +231,11 @@ export default function ReportsPage() {
             const xeroConfigured = Boolean(client.xero_connected);
             const disabled =
               (kind === "scorecard" && !xeroConfigured) ||
+              (kind === "monthly" && !xeroConfigured) ||
               (kind === "simpro" && !simproConfigured) ||
               (kind === "quotes_jobs" && !simproConfigured);
             const disabledReason =
-              kind === "scorecard"
+              kind === "scorecard" || kind === "monthly"
                 ? "Xero not connected"
                 : "Simpro not configured";
             return (

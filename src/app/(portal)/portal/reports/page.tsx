@@ -4,12 +4,13 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { type Client, type ReportLog } from "@/lib/api";
 import { useApi } from "@/lib/api-browser";
 
-type ReportKind = "simpro" | "scorecard" | "quotes_jobs";
+type ReportKind = "simpro" | "scorecard" | "quotes_jobs" | "monthly";
 
 const REPORT_TYPE_BY_KIND: Record<ReportKind, string> = {
   simpro: "simpro_weekly",
   scorecard: "xero_mtd",
   quotes_jobs: "quotes_jobs",
+  monthly: "xero_monthly",
 };
 
 const REPORT_META: Record<
@@ -28,6 +29,12 @@ const REPORT_META: Record<
       "Month-to-date revenue, materials, wages, GP, overheads and net profit vs your targets.",
     etaText: "Usually under 30 seconds.",
   },
+  monthly: {
+    title: "Monthly Financial Recap",
+    subtitle:
+      "Previous full month: revenue, materials, wages, GP, overheads and net profit vs your targets. Auto-arrives on the 7th of each month.",
+    etaText: "Usually under 30 seconds.",
+  },
   quotes_jobs: {
     title: "Quote Follow-Up & Job Health",
     subtitle:
@@ -39,6 +46,7 @@ const REPORT_META: Record<
 const REPORT_TYPE_LABELS: Record<string, string> = {
   simpro_weekly: "Labour report",
   xero_mtd: "Financial scorecard",
+  xero_monthly: "Monthly recap",
   quotes_jobs: "Quote follow-up",
 };
 
@@ -77,6 +85,7 @@ export default function PortalReportsPage() {
     simpro: { status: "idle" },
     scorecard: { status: "idle" },
     quotes_jobs: { status: "idle" },
+    monthly: { status: "idle" },
   });
 
   const [viewingId, setViewingId] = useState<number | null>(null);
@@ -97,6 +106,8 @@ export default function PortalReportsPage() {
           ? "Labour & Productivity"
           : kind === "scorecard"
           ? "Financial Scorecard"
+          : kind === "monthly"
+          ? "Monthly Financial Recap"
           : "Quote Follow-Up & Job Health";
       const a = document.createElement("a");
       a.href = url;
@@ -168,6 +179,8 @@ export default function PortalReportsPage() {
         html = await api.generateClientSimproHtml(client.id);
       } else if (kind === "scorecard") {
         html = await api.generateScorecardHtml(client.id);
+      } else if (kind === "monthly") {
+        html = await api.generateMonthlyHtml(client.id);
       } else {
         html = await api.generateQuotesJobsHtml(client.id);
       }
@@ -223,16 +236,17 @@ export default function PortalReportsPage() {
         </header>
 
         <div className="mb-8 space-y-4">
-          {(["scorecard", "simpro", "quotes_jobs"] as ReportKind[]).map((kind) => {
+          {(["scorecard", "monthly", "simpro", "quotes_jobs"] as ReportKind[]).map((kind) => {
             const meta = REPORT_META[kind];
             const state = genState[kind];
             const latest = latestByType[REPORT_TYPE_BY_KIND[kind]];
             const generating = state.status === "generating";
-            // Each card's "missing dependency" gate. Scorecard needs Xero;
-            // simpro + quotes_jobs need Simpro creds. The label tells the
-            // client exactly what's missing.
+            // Each card's "missing dependency" gate. Scorecard + Monthly
+            // need Xero; simpro + quotes_jobs need Simpro creds. The
+            // label tells the client exactly what's missing.
             const simproConfigured = Boolean(client.simpro_api_key_masked);
-            const xeroDisabled = kind === "scorecard" && !client.xero_connected;
+            const xeroDisabled =
+              (kind === "scorecard" || kind === "monthly") && !client.xero_connected;
             const simproDisabled =
               (kind === "simpro" || kind === "quotes_jobs") && !simproConfigured;
             const disabled = xeroDisabled || simproDisabled;

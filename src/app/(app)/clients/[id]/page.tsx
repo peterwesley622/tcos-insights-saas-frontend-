@@ -46,6 +46,7 @@ export default function EditClientPage() {
     simpro: true,
     scorecard: true,
     quotes: true,
+    monthly: true,
   });
   const [driveFolderId, setDriveFolderId] = useState("");
 
@@ -93,11 +94,14 @@ export default function EditClientPage() {
         setSiteWorkers(c.num_site_workers ?? "");
         setWagesInOpex(Boolean(c.wages_in_opex));
         setCcEmails(c.cc_emails ?? "");
-        const parts = (c.enabled_reports || "simpro,scorecard,quotes").split(",").map((s) => s.trim());
+        const parts = (c.enabled_reports || "simpro,scorecard,quotes,monthly")
+          .split(",")
+          .map((s) => s.trim());
         setEnabledReports({
           simpro: parts.includes("simpro"),
           scorecard: parts.includes("scorecard"),
           quotes: parts.includes("quotes"),
+          monthly: parts.includes("monthly"),
         });
         setDriveFolderId(c.drive_folder_id ?? "");
       })
@@ -134,7 +138,7 @@ export default function EditClientPage() {
     const er = Object.entries(enabledReports)
       .filter(([, v]) => v)
       .map(([k]) => k)
-      .join(",") || "simpro,scorecard,quotes";
+      .join(",") || "simpro,scorecard,quotes,monthly";
     if (er !== client.enabled_reports) patch.enabled_reports = er;
     const dfid = driveFolderId.trim() || null;
     if (dfid !== client.drive_folder_id) patch.drive_folder_id = dfid;
@@ -521,11 +525,12 @@ export default function EditClientPage() {
             </Field>
             <fieldset>
               <legend className="mb-1 block text-sm font-medium text-ink-soft">Enabled reports</legend>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
                 {(
                   [
                     ["simpro", "Labour & Productivity"],
-                    ["scorecard", "Financial Scorecard"],
+                    ["scorecard", "Financial Scorecard (weekly)"],
+                    ["monthly", "Monthly Financial Recap (7th)"],
                     ["quotes", "Quote Follow-Up"],
                   ] as [keyof typeof enabledReports, string][]
                 ).map(([key, label]) => (

@@ -9,7 +9,7 @@ import { useApi } from "@/lib/api-browser";
 const REPORT_TYPE_LABELS: Record<string, string> = {
   simpro_weekly: "Simpro labour",
   xero_mtd: "Xero scorecard (MTD)",
-  xero_monthly: "Xero scorecard (monthly)",
+  xero_monthly: "Monthly financial recap",
   quotes_jobs: "Quote follow-up & job health",
 };
 
