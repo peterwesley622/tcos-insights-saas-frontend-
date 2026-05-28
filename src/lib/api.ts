@@ -24,6 +24,12 @@ export type Client = {
   active: boolean | null;
   xero_connected: boolean;
   xero_tenant_id: string | null;
+  // OAuth-specific Simpro state. simpro_connected mirrors the backend
+  // check "has refresh_token AND non-zero company_id". simpro_oauth_companies
+  // is non-null only between the OAuth callback and the admin picking
+  // a company in the picker.
+  simpro_connected: boolean;
+  simpro_oauth_companies: { id: number; name: string }[] | null;
 };
 
 export type ClientCreate = {
@@ -232,6 +238,34 @@ export function buildApi(getAccessToken: GetAccessToken) {
       request<{ ok: boolean }>(`/api/clients/${id}/xero/disconnect`, {
         method: "POST",
       }),
+    /**
+     * Fetch the Simpro OAuth authorize URL. Caller window.location.href's
+     * it to redirect the user to their Build's consent page. After approval
+     * Simpro 303-redirects to /api/simpro/callback on the backend, which
+     * then bounces back to /clients/{id}?simpro=pick for company selection.
+     */
+    simproConnectAuthorizeUrl: (id: number) =>
+      request<{ authorize_url: string; client_id: number }>(
+        `/api/clients/${id}/simpro/connect`,
+      ),
+    /**
+     * Finalise the post-OAuth company picker. Backend validates that
+     * companyId is in the cached simpro_oauth_companies list before
+     * saving and clearing the cache.
+     */
+    simproSelectCompany: (clientId: number, companyId: number) =>
+      request<{ status: string; client_id: number; simpro_company_id: number }>(
+        `/api/clients/${clientId}/simpro/select-company`,
+        {
+          method: "POST",
+          body: JSON.stringify({ company_id: companyId }),
+        },
+      ),
+    simproDisconnect: (id: number) =>
+      request<{ status: string; client_id: number }>(
+        `/api/clients/${id}/simpro/disconnect`,
+        { method: "POST" },
+      ),
     /**
      * Trigger a Supabase magic-link invite to one owner email on a client.
      * Multi-owner clients can invite each owner separately by passing the

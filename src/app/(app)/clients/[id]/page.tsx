@@ -53,13 +53,15 @@ export default function EditClientPage() {
   const [saving, setSaving] = useState(false);
   const [actioning, setActioning] = useState(false);
 
-  // Pick up the ?xero=... query param the backend sets after the OAuth
-  // callback redirects back to this page, render an inline banner, then
-  // strip the param so a refresh doesn't re-show stale state.
+  // Pick up the ?xero=... or ?simpro=... query param the backend sets
+  // after the OAuth callback redirects back to this page, render an
+  // inline banner, then strip the param so a refresh doesn't re-show
+  // stale state.
   useEffect(() => {
     if (!searchParams) return;
     const xero = searchParams.get("xero");
-    if (!xero) return;
+    const simpro = searchParams.get("simpro");
+    if (!xero && !simpro) return;
     if (xero === "connected") {
       const tenant = searchParams.get("tenant") || "";
       setConnMsg({
@@ -69,6 +71,16 @@ export default function EditClientPage() {
     } else if (xero === "error") {
       const detail = searchParams.get("detail") || "unknown error";
       setConnMsg({ kind: "err", text: `Xero connect failed: ${detail}` });
+    } else if (simpro === "pick") {
+      // The picker UI itself renders from client.simpro_oauth_companies;
+      // this banner just confirms the OAuth handshake worked.
+      setConnMsg({
+        kind: "ok",
+        text: "Simpro authorised — pick a company below to finish connecting.",
+      });
+    } else if (simpro === "error") {
+      const detail = searchParams.get("detail") || "unknown error";
+      setConnMsg({ kind: "err", text: `Simpro connect failed: ${detail}` });
     }
     // Drop the query params from the URL without reloading or pushing
     // a new history entry.
@@ -267,6 +279,64 @@ export default function EditClientPage() {
       const fresh = await api.getClient(client.id);
       setClient(fresh);
       setConnMsg({ kind: "ok", text: "Disconnected from Xero." });
+    } catch (e) {
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setActioning(false);
+    }
+  }
+
+  async function onConnectSimpro() {
+    if (!client) return;
+    if (!client.simpro_base_url) {
+      setConnMsg({
+        kind: "err",
+        text: "Set a Simpro Build URL on this client first (then Save), and try again.",
+      });
+      return;
+    }
+    setActioning(true);
+    setConnMsg(null);
+    try {
+      const { authorize_url } = await api.simproConnectAuthorizeUrl(client.id);
+      if (authorize_url) {
+        window.location.href = authorize_url;
+      } else {
+        setConnMsg({ kind: "err", text: "Could not get Simpro authorize URL." });
+      }
+    } catch (e) {
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setActioning(false);
+    }
+  }
+
+  async function onDisconnectSimpro() {
+    if (!client) return;
+    if (!confirm("Disconnect Simpro (OAuth) for this client?")) return;
+    setActioning(true);
+    setConnMsg(null);
+    try {
+      await api.simproDisconnect(client.id);
+      const fresh = await api.getClient(client.id);
+      setClient(fresh);
+      setConnMsg({ kind: "ok", text: "Disconnected from Simpro." });
+    } catch (e) {
+      setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setActioning(false);
+    }
+  }
+
+  async function onSelectSimproCompany(companyId: number) {
+    if (!client) return;
+    setActioning(true);
+    setConnMsg(null);
+    try {
+      await api.simproSelectCompany(client.id, companyId);
+      const fresh = await api.getClient(client.id);
+      setClient(fresh);
+      setConnMsg({ kind: "ok", text: "Simpro company selected and connected." });
     } catch (e) {
       setConnMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -620,6 +690,26 @@ export default function EditClientPage() {
                 Connect Xero
               </button>
             )}
+            {client.simpro_connected ? (
+              <button
+                type="button"
+                onClick={onDisconnectSimpro}
+                disabled={actioning}
+                className="rounded-md border border-brand-red bg-white px-4 py-2 text-sm font-medium text-brand-red hover:bg-brand-red/10 disabled:opacity-50"
+              >
+                Disconnect Simpro
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onConnectSimpro}
+                disabled={actioning || !client.simpro_base_url}
+                title={!client.simpro_base_url ? "Set a Simpro Build URL first, then Save." : undefined}
+                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
+              >
+                Connect Simpro (OAuth)
+              </button>
+            )}
             <button
               type="button"
               onClick={onTestDrive}
@@ -638,6 +728,20 @@ export default function EditClientPage() {
             >
               {connMsg.text}
             </div>
+          )}
+
+          {/* Post-OAuth Simpro company picker.
+             Renders when the OAuth callback cached a list of companies on
+             the client row but the admin hasn't picked one yet. Single-
+             select dropdown, unselected by default — exactly what Simpro's
+             Partner Programme requires (do NOT pre-select the first
+             company). */}
+          {client.simpro_oauth_companies && client.simpro_oauth_companies.length > 0 && (
+            <SimproCompanyPicker
+              companies={client.simpro_oauth_companies}
+              disabled={actioning}
+              onSelect={onSelectSimproCompany}
+            />
           )}
         </div>
 
@@ -763,5 +867,63 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+/**
+ * Post-OAuth Simpro company picker.
+ *
+ * Renders the single-select dropdown that Simpro's Partner Programme
+ * mandates - "unselected by default, do NOT assume the first company is
+ * the correct one." The empty option is the initial value and the
+ * Confirm button stays disabled until the admin actively picks
+ * something other than the placeholder.
+ */
+function SimproCompanyPicker({
+  companies,
+  disabled,
+  onSelect,
+}: {
+  companies: { id: number; name: string }[];
+  disabled: boolean;
+  onSelect: (companyId: number) => void;
+}) {
+  const [picked, setPicked] = useState<number | "">("");
+  return (
+    <div className="mt-6 rounded-md border border-accent-soft bg-accent-soft/30 p-4">
+      <p className="mb-2 text-sm font-semibold text-ink">
+        Pick a Simpro company to link
+      </p>
+      <p className="mb-3 text-xs text-ink-soft">
+        Simpro returned the following companies for the authorised user. Pick
+        the one this TCOS Insights client should pull data from. (You can
+        only link one company per TCOS client; create a second TCOS client
+        if you need to track another company.)
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={picked}
+          onChange={(e) =>
+            setPicked(e.target.value === "" ? "" : Number(e.target.value))
+          }
+          className="rounded-md border border-rule bg-white px-3 py-2 text-sm focus:border-muted focus:outline-none"
+        >
+          <option value="">Choose a company…</option>
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} (ID {c.id})
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => typeof picked === "number" && onSelect(picked)}
+          disabled={disabled || picked === ""}
+          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
   );
 }
