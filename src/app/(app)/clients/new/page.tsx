@@ -56,12 +56,17 @@ export default function NewClientPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Simpro is optional. If the user filled in any Simpro fields they
-    // must also have detected a company (so we know which one to use);
-    // otherwise simpro_company_id stays at the backend default of 0 and
-    // the client is created as Xero-only.
-    const wantsSimpro = simproUrl.trim().length > 0 || simproKey.trim().length > 0;
-    if (wantsSimpro && companyId == null) return;
+    // Simpro is optional + has two paths:
+    //   1. Legacy API-key flow: paste URL + API key, click "Detect
+    //      companies" to pick a company, then Create.
+    //   2. OAuth flow: paste URL only, click Create (saves with
+    //      simpro_company_id=0), then click "Connect Simpro (OAuth)"
+    //      on the edit page → Simpro consent → pick company.
+    // Both paths are valid; only the legacy path needs the detect step
+    // before save, so we gate only when an API KEY has been entered
+    // (URL-only is fine and routes to OAuth on the edit page).
+    const wantsApiKeyPath = simproKey.trim().length > 0;
+    if (wantsApiKeyPath && companyId == null) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -84,13 +89,14 @@ export default function NewClientPage() {
     }
   }
 
-  // Submit gate: business name is the only hard requirement. When the
-  // admin starts filling Simpro fields, the detect-companies step
-  // becomes required so we know which company ID to save.
-  const wantsSimpro = simproUrl.trim().length > 0 || simproKey.trim().length > 0;
+  // Submit gate: business name is the only hard requirement. The detect-
+  // companies step is required only when an API key is pasted (legacy
+  // flow); URL-only saves go through fine and finish via the OAuth
+  // "Connect Simpro" button on the edit page.
+  const wantsApiKeyPath = simproKey.trim().length > 0;
   const canSubmit =
     businessName.trim().length > 0 &&
-    (!wantsSimpro || (companyId != null && detectResult?.status !== "error"));
+    (!wantsApiKeyPath || (companyId != null && detectResult?.status !== "error"));
 
   return (
     <main className="min-h-screen bg-paper-warm p-8">
@@ -140,8 +146,14 @@ export default function NewClientPage() {
             <p className="text-xs text-muted">
               Leave both fields blank for Xero-only clients — they&apos;ll get
               the financial scorecard report only, with no labour or quote
-              follow-up emails. To enable those, paste your Simpro URL and
-              API key, then click <strong>Detect companies</strong>.
+              follow-up emails.
+            </p>
+            <p className="text-xs text-muted">
+              <strong>To connect Simpro:</strong> paste the Build URL below,
+              click Create client, then click{" "}
+              <strong>Connect Simpro (OAuth)</strong> on the next page. The
+              API key field is for legacy clients onboarded before Simpro
+              moved to OAuth — leave it blank for new clients.
             </p>
             <Field label="Simpro base URL">
               <input
