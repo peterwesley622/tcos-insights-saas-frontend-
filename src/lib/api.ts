@@ -208,6 +208,18 @@ export function buildApi(getAccessToken: GetAccessToken) {
       }),
     deleteClient: (id: number) =>
       request<void>(`/api/clients/${id}`, { method: "DELETE" }),
+    /**
+     * Hard-delete a client — removes the client row plus every Target
+     * and ReportLog that references them. Destructive and irreversible.
+     * The corresponding /api/clients/{id} (soft delete) only sets
+     * active=False; this endpoint actually wipes the rows.
+     */
+    purgeClient: (id: number) =>
+      request<{
+        status: string;
+        client_id: number;
+        deleted: { targets: number; report_logs: number; client: number };
+      }>(`/api/clients/${id}/purge`, { method: "DELETE" }),
     testSimpro: (id: number) =>
       request<{
         client_id: number;

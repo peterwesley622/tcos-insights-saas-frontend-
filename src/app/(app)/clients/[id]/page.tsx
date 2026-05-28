@@ -410,6 +410,32 @@ export default function EditClientPage() {
     }
   }
 
+  async function onPurge() {
+    if (!client) return;
+    // Strong-confirm so a misclick can't wipe a real client. The user
+    // has to type the literal business name into a prompt() — same
+    // pattern GitHub uses for repo deletes.
+    const typed = window.prompt(
+      `Permanently delete ${client.business_name} and ALL their reports, targets, and history?\n\nThis cannot be undone.\n\nType the business name to confirm:`,
+    );
+    if (typed === null) return; // cancelled
+    if (typed.trim() !== client.business_name) {
+      setStatusMsg({
+        kind: "err",
+        text: "Business name didn't match — delete cancelled.",
+      });
+      return;
+    }
+    setActioning(true);
+    try {
+      await api.purgeClient(client.id);
+      router.push("/clients");
+    } catch (e) {
+      setStatusMsg({ kind: "err", text: e instanceof Error ? e.message : String(e) });
+      setActioning(false);
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-paper-warm p-8">
@@ -821,7 +847,22 @@ export default function EditClientPage() {
             >
               Soft-delete
             </button>
+            <button
+              type="button"
+              onClick={onPurge}
+              disabled={actioning}
+              title="Hard delete — irreversible, removes the client and all their reports/targets."
+              className="rounded-md bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Delete permanently
+            </button>
           </div>
+          <p className="mt-3 text-xs text-muted">
+            <strong>Soft-delete</strong> keeps the row + history but skips the
+            client on the Monday cron. <strong>Delete permanently</strong>{" "}
+            wipes the client and every related report/target — only for
+            cleaning up test clients.
+          </p>
           {statusMsg && (
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
