@@ -261,6 +261,16 @@ export function buildApi(getAccessToken: GetAccessToken) {
         `/api/clients/${id}/simpro/connect`,
       ),
     /**
+     * List the companies visible on this client's stored Simpro Build.
+     * Used by the edit page so an admin doesn't have to guess the
+     * numeric simpro_company_id (the #1 source of "Test Simpro: jobs
+     * 404 — company doesn't exist" errors).
+     */
+    listSimproCompaniesForClient: (id: number) =>
+      request<{ companies: { id: number; name: string }[] }>(
+        `/api/clients/${id}/simpro/list-companies`,
+      ),
+    /**
      * Finalise the post-OAuth company picker. Backend validates that
      * companyId is in the cached simpro_oauth_companies list before
      * saving and clearing the cache.

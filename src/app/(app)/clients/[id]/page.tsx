@@ -50,6 +50,16 @@ export default function EditClientPage() {
   });
   const [driveFolderId, setDriveFolderId] = useState("");
 
+  // Detect-companies state for the edit page. Mirrors the new-client
+  // page's inline picker — admins shouldn't have to guess the company
+  // ID. detectedCompanies = null means "haven't fetched yet"; [] means
+  // "fetched but Build is empty"; populated means show the picker.
+  const [detectedCompanies, setDetectedCompanies] = useState<
+    { id: number; name: string }[] | null
+  >(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectErr, setDetectErr] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [actioning, setActioning] = useState(false);
 
@@ -328,6 +338,21 @@ export default function EditClientPage() {
     }
   }
 
+  async function onDetectCompanies() {
+    if (!client) return;
+    setDetecting(true);
+    setDetectErr(null);
+    setDetectedCompanies(null);
+    try {
+      const { companies } = await api.listSimproCompaniesForClient(client.id);
+      setDetectedCompanies(companies);
+    } catch (e) {
+      setDetectErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDetecting(false);
+    }
+  }
+
   async function onSelectSimproCompany(companyId: number) {
     if (!client) return;
     setActioning(true);
@@ -556,6 +581,59 @@ export default function EditClientPage() {
                 onChange={(e) => setCompanyId(e.target.value === "" ? "" : Number(e.target.value))}
                 className={inputCls}
               />
+              <p className="mt-1 text-xs text-muted">
+                Single-company Builds use <strong>0</strong>. Multi-company
+                Builds (e.g. WS Remedial with QLD + NSW) use the IDs Simpro
+                assigns — click <strong>Detect companies</strong> below to
+                see your Build&apos;s actual IDs. Test Simpro will 404 on
+                <code className="mx-1 rounded bg-paper-warm px-1 py-0.5">/jobs/</code>
+                if this number doesn&apos;t match an existing company.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onDetectCompanies}
+                  disabled={detecting || !simproUrl}
+                  title={!simproUrl ? "Set a Simpro Build URL first, then Save." : undefined}
+                  className="rounded-md border border-rule bg-white px-3 py-1.5 text-xs font-medium text-ink-soft hover:bg-paper-warm disabled:opacity-50"
+                >
+                  {detecting ? "Detecting…" : "Detect companies"}
+                </button>
+                {detectErr && (
+                  <span className="text-xs text-brand-red">{detectErr}</span>
+                )}
+              </div>
+              {detectedCompanies && detectedCompanies.length > 0 && (
+                <div className="mt-3 rounded-md border border-accent-soft bg-accent-soft/30 p-3">
+                  <p className="mb-2 text-xs font-semibold text-ink">
+                    Companies on this Build:
+                  </p>
+                  <ul className="space-y-1">
+                    {detectedCompanies.map((c) => (
+                      <li key={c.id} className="flex items-center gap-2 text-sm">
+                        <button
+                          type="button"
+                          onClick={() => setCompanyId(c.id)}
+                          className="rounded-md border border-rule bg-white px-2 py-0.5 text-xs font-semibold text-ink hover:bg-paper-warm"
+                        >
+                          Use ID {c.id}
+                        </button>
+                        <span className="text-ink-soft">{c.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs text-muted">
+                    Click a button above to set the ID in the field, then{" "}
+                    <strong>Save changes</strong>.
+                  </p>
+                </div>
+              )}
+              {detectedCompanies && detectedCompanies.length === 0 && (
+                <p className="mt-3 text-xs text-brand-red">
+                  Simpro returned no companies for this Build. Double-check
+                  the Build URL and credentials.
+                </p>
+              )}
             </Field>
           </Section>
 
