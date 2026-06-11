@@ -131,6 +131,38 @@ export type ReportSendResult = {
   error?: string;
 };
 
+export type Prospect = {
+  id: number;
+  intake_token: string;
+  intake_token_expires_at: string | null;
+  status: string;
+  notes: string | null;
+  business_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  trade_type: string | null;
+  systems_in_use: string | null;
+  simpro_connected: boolean;
+  xero_connected: boolean;
+  simpro_base_url: string | null;
+  xero_tenant_id: string | null;
+  drive_folder_id: string | null;
+  analysis_url: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  intake_completed_at: string | null;
+  simpro_connected_at: string | null;
+  xero_connected_at: string | null;
+  analysed_at: string | null;
+  delivered_at: string | null;
+};
+
+export type ProspectCreate = {
+  notes?: string;
+  expires_in_days?: number;
+};
+
 export type Principal = {
   sub: string | null;
   email: string | null;
@@ -220,6 +252,20 @@ export function buildApi(getAccessToken: GetAccessToken) {
         client_id: number;
         deleted: { targets: number; report_logs: number; client: number };
       }>(`/api/clients/${id}/purge`, { method: "DELETE" }),
+
+    // ----- Self-serve review (Prospect) endpoints -----
+    listProspects: () => request<Prospect[]>("/api/prospects"),
+    getProspect: (id: number) => request<Prospect>(`/api/prospects/${id}`),
+    createProspect: (body: ProspectCreate) =>
+      request<Prospect>("/api/prospects", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    purgeProspect: (id: number) =>
+      request<{ status: string; prospect_id: number }>(
+        `/api/prospects/${id}`,
+        { method: "DELETE" },
+      ),
     testSimpro: (id: number) =>
       request<{
         client_id: number;
