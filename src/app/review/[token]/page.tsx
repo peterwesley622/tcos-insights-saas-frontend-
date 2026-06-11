@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 /**
  * Public self-serve review intake page.
@@ -51,8 +51,11 @@ type PublicProspect = {
   contact_phone: string | null;
   trade_type: string | null;
   systems_in_use: string | null;
+  simpro_base_url: string | null;
+  simpro_company_id: number | null;
   simpro_connected: boolean;
   xero_connected: boolean;
+  simpro_oauth_companies: { id: number; name: string }[] | null;
   intake_completed_at: string | null;
 };
 
@@ -64,11 +67,14 @@ function getApiBaseUrl(): string {
 
 export default function PublicIntakePage() {
   const params = useParams<{ token: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const token = params.token;
 
   const [prospect, setProspect] = useState<PublicProspect | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const [businessName, setBusinessName] = useState("");
   const [contactName, setContactName] = useState("");
@@ -79,6 +85,34 @@ export default function PublicIntakePage() {
 
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
+
+  // Surface ?simpro=… / ?xero=… banners set by the OAuth callbacks,
+  // then strip the query so a refresh doesn't re-show stale state.
+  useEffect(() => {
+    if (!searchParams) return;
+    const xero = searchParams.get("xero");
+    const simpro = searchParams.get("simpro");
+    if (!xero && !simpro) return;
+    if (xero === "connected") {
+      const tenant = searchParams.get("tenant") || "";
+      setBanner({
+        kind: "ok",
+        text: tenant ? `Xero connected — ${tenant}.` : "Xero connected.",
+      });
+    } else if (xero === "error") {
+      const detail = searchParams.get("detail") || "unknown error";
+      setBanner({ kind: "err", text: `Xero connect failed: ${detail}` });
+    } else if (simpro === "pick") {
+      setBanner({
+        kind: "ok",
+        text: "Simpro authorised — pick a company below to finish.",
+      });
+    } else if (simpro === "error") {
+      const detail = searchParams.get("detail") || "unknown error";
+      setBanner({ kind: "err", text: `Simpro connect failed: ${detail}` });
+    }
+    router.replace(`/review/${token}`);
+  }, [searchParams, token, router]);
 
   useEffect(() => {
     if (!token) return;
@@ -183,13 +217,27 @@ export default function PublicIntakePage() {
   }
   if (!prospect) return null;
 
-  // Once intake is in, jump to the next-step screen. Day 3 turns the
-  // placeholder buttons into real Connect Simpro / Connect Xero OAuth
-  // launchers; for Day 2 they're labelled "coming soon".
+  // Once intake is in, jump to the connect screen with real OAuth.
   if (prospect.status !== "pending_intake") {
     return (
       <Shell>
-        <ConnectScreen prospect={prospect} />
+        {banner && (
+          <div
+            className={`mx-auto mb-4 max-w-2xl rounded-md p-3 text-sm ${
+              banner.kind === "ok"
+                ? "bg-brand-green/10 text-brand-green"
+                : "bg-brand-red/10 text-brand-red"
+            }`}
+          >
+            {banner.text}
+          </div>
+        )}
+        <ConnectScreen
+          prospect={prospect}
+          token={token}
+          onProspectUpdate={(p) => setProspect(p)}
+          onError={(text) => setBanner({ kind: "err", text })}
+        />
       </Shell>
     );
   }
@@ -329,7 +377,18 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ConnectScreen({ prospect }: { prospect: PublicProspect }) {
+function ConnectScreen({
+  prospect,
+  token,
+  onProspectUpdate,
+  onError,
+}: {
+  prospect: PublicProspect;
+  token: string;
+  onProspectUpdate: (p: PublicProspect) => void;
+  onError: (text: string) => void;
+}) {
+  const allConnected = prospect.simpro_connected && prospect.xero_connected;
   return (
     <div className="card mx-auto max-w-2xl p-8">
       <p className="eyebrow mb-3">STEP 2 OF 2 — CONNECT YOUR SYSTEMS</p>
@@ -338,57 +397,242 @@ function ConnectScreen({ prospect }: { prospect: PublicProspect }) {
       </h1>
       <p className="mb-6 text-base text-ink-soft">
         Now connect Simpro and Xero so we can pull the data for your
-        review. Both are <strong>read-only</strong>; we don&apos;t write
-        anything back to your systems.
+        review. Both are <strong>read-only</strong> — we don&apos;t write
+        anything back to your systems, and tokens are revoked once your
+        review is delivered.
       </p>
 
-      <div className="space-y-3">
-        <ConnectButton
-          label="Connect Simpro"
-          connected={prospect.simpro_connected}
-          disabled
+      <div className="space-y-4">
+        <SimproConnectCard
+          prospect={prospect}
+          token={token}
+          onProspectUpdate={onProspectUpdate}
+          onError={onError}
         />
-        <ConnectButton
-          label="Connect Xero"
-          connected={prospect.xero_connected}
-          disabled
+        <XeroConnectCard
+          prospect={prospect}
+          token={token}
+          onError={onError}
         />
       </div>
 
-      <div className="mt-6 rounded-md border border-accent-soft bg-accent-soft/30 p-4 text-sm text-ink-soft">
-        <strong className="text-ink">Coming soon:</strong> these buttons go
-        live in the next deploy. For now your intake is saved and Better
-        Back Office has been notified — they&apos;ll reach out with the
-        connection step.
+      {allConnected && (
+        <div className="mt-6 rounded-md border border-brand-green/40 bg-brand-green/10 p-4 text-sm text-ink-soft">
+          <strong className="text-brand-green">All systems connected.</strong>{" "}
+          Better Back Office will run your review and email you when it&apos;s
+          ready — usually within a couple of business days.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SimproConnectCard({
+  prospect,
+  token,
+  onProspectUpdate,
+  onError,
+}: {
+  prospect: PublicProspect;
+  token: string;
+  onProspectUpdate: (p: PublicProspect) => void;
+  onError: (text: string) => void;
+}) {
+  const [buildUrl, setBuildUrl] = useState(prospect.simpro_base_url ?? "");
+  const [busy, setBusy] = useState(false);
+  const pending = prospect.simpro_oauth_companies;
+  const connected =
+    prospect.simpro_connected && prospect.simpro_company_id != null;
+
+  async function onSetUrlAndConnect() {
+    if (!buildUrl.trim()) {
+      onError("Enter your Simpro Build URL first.");
+      return;
+    }
+    let normalised = buildUrl.trim();
+    if (!normalised.startsWith("http://") && !normalised.startsWith("https://")) {
+      normalised = `https://${normalised}`;
+    }
+    setBusy(true);
+    try {
+      // Save the URL on the Prospect row, then fetch the authorize URL.
+      const urlRes = await fetch(
+        `${getApiBaseUrl()}/api/public/prospects/${token}/simpro/url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ simpro_base_url: normalised }),
+        },
+      );
+      if (!urlRes.ok) {
+        throw new Error(`Couldn't save Build URL (${urlRes.status})`);
+      }
+      const authRes = await fetch(
+        `${getApiBaseUrl()}/api/public/prospects/${token}/simpro/connect`,
+      );
+      if (!authRes.ok) {
+        const body = await authRes.text().catch(() => "");
+        throw new Error(`Couldn't start Simpro OAuth (${authRes.status}): ${body}`);
+      }
+      const { authorize_url } = (await authRes.json()) as { authorize_url: string };
+      window.location.href = authorize_url;
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  async function onPickCompany(companyId: number) {
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `${getApiBaseUrl()}/api/public/prospects/${token}/simpro/select-company`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ company_id: companyId }),
+        },
+      );
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`${res.status}: ${body}`);
+      }
+      const updated = (await res.json()) as PublicProspect;
+      onProspectUpdate(updated);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (connected) {
+    return (
+      <div className="rounded-md border border-brand-green bg-brand-green/10 px-4 py-3">
+        <p className="font-medium text-brand-green">Simpro connected ✓</p>
+        <p className="text-xs text-ink-soft">
+          Build: {prospect.simpro_base_url} · Company ID: {prospect.simpro_company_id}
+        </p>
+      </div>
+    );
+  }
+
+  if (pending && pending.length > 0) {
+    return (
+      <div className="rounded-md border border-accent-soft bg-accent-soft/30 p-4">
+        <p className="mb-1 text-sm font-semibold text-ink">
+          Pick a Simpro company
+        </p>
+        <p className="mb-3 text-xs text-ink-soft">
+          Simpro returned the following companies for your account. Pick the
+          one this review should cover.
+        </p>
+        <ul className="space-y-1">
+          {pending.map((c) => (
+            <li key={c.id} className="flex items-center gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => onPickCompany(c.id)}
+                disabled={busy}
+                className="rounded-md border border-rule bg-white px-2 py-0.5 text-xs font-semibold text-ink hover:bg-paper-warm disabled:opacity-50"
+              >
+                Use this one
+              </button>
+              <span className="text-ink-soft">
+                {c.name} <span className="text-muted">(ID {c.id})</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-rule bg-white p-4">
+      <p className="mb-1 text-sm font-semibold text-ink">Connect Simpro</p>
+      <p className="mb-3 text-xs text-ink-soft">
+        Enter your Simpro Build URL (the address you visit to log into Simpro,
+        e.g. <code className="rounded bg-paper-warm px-1 py-0.5">yourname.simprosuite.com</code>).
+        We&apos;ll send you to Simpro to authorise, then bring you back here.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={buildUrl}
+          onChange={(e) => setBuildUrl(e.target.value)}
+          placeholder="yourname.simprosuite.com"
+          className="flex-1 min-w-0 rounded-md border border-rule px-3 py-2 text-sm focus:border-muted focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={onSetUrlAndConnect}
+          disabled={busy || !buildUrl.trim()}
+          className="btn-accent shrink-0"
+        >
+          {busy ? "Connecting…" : "Connect Simpro"}
+        </button>
       </div>
     </div>
   );
 }
 
-function ConnectButton({
-  label,
-  connected,
-  disabled,
+function XeroConnectCard({
+  prospect,
+  token,
+  onError,
 }: {
-  label: string;
-  connected: boolean;
-  disabled?: boolean;
+  prospect: PublicProspect;
+  token: string;
+  onError: (text: string) => void;
 }) {
-  if (connected) {
+  const [busy, setBusy] = useState(false);
+
+  async function onConnect() {
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `${getApiBaseUrl()}/api/public/prospects/${token}/xero/connect`,
+      );
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`Couldn't start Xero OAuth (${res.status}): ${body}`);
+      }
+      const { authorize_url } = (await res.json()) as { authorize_url: string };
+      window.location.href = authorize_url;
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  if (prospect.xero_connected) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-brand-green bg-brand-green/10 px-4 py-3">
-        <span className="font-medium text-brand-green">{label} — connected ✓</span>
+      <div className="rounded-md border border-brand-green bg-brand-green/10 px-4 py-3">
+        <p className="font-medium text-brand-green">Xero connected ✓</p>
+        <p className="text-xs text-ink-soft">
+          We&apos;ll use this Xero organisation for the review.
+        </p>
       </div>
     );
   }
+
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      className="w-full rounded-md bg-accent px-4 py-3 text-left text-sm font-semibold text-white hover:bg-accent-deep disabled:opacity-50"
-    >
-      {label} <span className="opacity-70 text-xs">(coming soon)</span> →
-    </button>
+    <div className="rounded-md border border-rule bg-white p-4">
+      <p className="mb-1 text-sm font-semibold text-ink">Connect Xero</p>
+      <p className="mb-3 text-xs text-ink-soft">
+        We&apos;ll send you to Xero to sign in and approve read-only access.
+        After approving, you&apos;ll come straight back to this page.
+      </p>
+      <button
+        type="button"
+        onClick={onConnect}
+        disabled={busy}
+        className="btn-accent w-full"
+      >
+        {busy ? "Connecting…" : "Connect Xero"}
+      </button>
+    </div>
   );
 }
 
