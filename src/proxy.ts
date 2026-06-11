@@ -31,7 +31,11 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/auth");
-  const isPublic = pathname === "/" || isAuthRoute;
+  // /review/{token} is the public intake page for the self-serve review
+  // flow — prospects don't have Supabase logins, the token in the URL
+  // IS the access grant. Must be reachable without a session.
+  const isReviewRoute = pathname.startsWith("/review");
+  const isPublic = pathname === "/" || isAuthRoute || isReviewRoute;
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
