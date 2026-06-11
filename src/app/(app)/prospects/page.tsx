@@ -191,7 +191,13 @@ export default function ProspectsPage() {
               {rows.map((p) => (
                 <tr key={p.id} className="hover:bg-paper-warm/60">
                   <td className="px-4 py-3 align-top">
-                    <ProspectStatusBadge status={p.status} />
+                    <div className="flex flex-col gap-1.5">
+                      <ProspectStatusBadge status={p.status} />
+                      <ConnectionChips
+                        simpro={p.simpro_connected}
+                        xero={p.xero_connected}
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="font-medium text-ink">
@@ -262,10 +268,14 @@ function fmtDate(iso: string) {
 }
 
 function ProspectStatusBadge({ status }: { status: string }) {
+  // Broad lifecycle stage. The granular Simpro/Xero connection state
+  // is shown beneath this by <ConnectionChips/> — the badge here is
+  // intentionally coarse so Peter can scan the column at a glance.
   const palette: Record<string, { bg: string; text: string; label: string }> = {
     pending_intake: { bg: "bg-paper-cool", text: "text-ink-soft", label: "Awaiting intake" },
     intake_completed: { bg: "bg-accent-soft", text: "text-accent-deep", label: "Connecting systems" },
     connecting: { bg: "bg-accent-soft", text: "text-accent-deep", label: "Connecting systems" },
+    ready_for_analysis: { bg: "bg-brand-green/10", text: "text-brand-green", label: "Ready for review" },
     analysing: { bg: "bg-brand-amber/15", text: "text-brand-amber", label: "Analysing" },
     delivered: { bg: "bg-brand-green/10", text: "text-brand-green", label: "Delivered" },
     failed: { bg: "bg-brand-red/10", text: "text-brand-red", label: "Failed" },
@@ -280,6 +290,34 @@ function ProspectStatusBadge({ status }: { status: string }) {
       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${entry.bg} ${entry.text}`}
     >
       {entry.label}
+    </span>
+  );
+}
+
+function ConnectionChips({ simpro, xero }: { simpro: boolean; xero: boolean }) {
+  // Inline at-a-glance "did they connect both systems yet" indicator.
+  // Tick = green when connected, hollow rule chip when not. Lets Peter
+  // see WHY a prospect is stuck in "Connecting systems" without having
+  // to open the row.
+  return (
+    <div className="flex gap-1">
+      <ConnectionChip label="Simpro" connected={simpro} />
+      <ConnectionChip label="Xero" connected={xero} />
+    </div>
+  );
+}
+
+function ConnectionChip({ label, connected }: { label: string; connected: boolean }) {
+  const cls = connected
+    ? "border-brand-green/40 bg-brand-green/10 text-brand-green"
+    : "border-rule bg-white text-muted";
+  const glyph = connected ? "✓" : "○";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}
+    >
+      <span aria-hidden="true">{glyph}</span>
+      {label}
     </span>
   );
 }
